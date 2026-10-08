@@ -4,7 +4,6 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { signup } from "@/app/actions/auth";
 import type { AuthFormState } from "@/lib/definitions";
-import { InstallButton } from "./InstallButton";
 
 export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "register"; inviteOnly?: boolean }) {
   const [state, setState] = useState<AuthFormState>({}); const [pending, setPending] = useState(false);
@@ -48,7 +47,6 @@ export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "regist
         <button disabled={pending} className="w-full rounded-full bg-sage px-5 py-3 text-white transition hover:bg-ink">{pending ? "Un momento…" : register ? "Crear mi espacio →" : "Entrar →"}</button>
       </form>
       <p className="mt-6 text-center text-sm text-muted">{register ? "¿Ya tienes una cuenta? " : "¿Primera vez aquí? "}<Link href={register ? "/login" : "/register"} className="text-sage underline underline-offset-4">{register ? "Inicia sesión" : "Crea tu cuenta"}</Link></p>
-      <div className="mt-5 text-center"><InstallButton /></div>
     </section>
   </main>;
 }

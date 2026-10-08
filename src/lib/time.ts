@@ -28,7 +28,16 @@ export function localDayBounds(date: string, timezone: string, start: string, en
   return { start: combineLocalDateTime(date, start, timezone), end: combineLocalDateTime(date, end, timezone) };
 }
 export function calendarDayBounds(date: string, timezone: string) {
-  return { start: combineLocalDateTime(date, "00:00", timezone), end: combineLocalDateTime(addLocalDays(date, 1), "00:00", timezone) };
+  const midnight = (day: string) => {
+    DateSchema.parse(day); TimezoneSchema.parse(timezone);
+    const value = new TZDate(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8, 10)), 0, 0, 0, 0, timezone);
+    if (ymdInZone(value, timezone) !== day) throw new Error("Esta fecha no existe en tu zona horaria.");
+    let start = new Date(value.getTime());
+    // A midnight transition may start at 01:00 or repeat midnight. Pick the first real instant.
+    for (let i = 0; i < 180; i++) { const previous = addMinutesUtc(start, -1); if (ymdInZone(previous, timezone) !== day) break; start = previous; }
+    return start;
+  };
+  return { start: midnight(date), end: midnight(addLocalDays(date, 1)) };
 }
 export function formatTime(date: Date, timezone: string) { return format(new TZDate(date, timezone), "HH:mm"); }
 export function formatDayHeading(date: string, timezone: string) { return format(new TZDate(combineLocalDateTime(date, "12:00", timezone), timezone), "EEEE d 'de' MMMM", { locale: es }); }

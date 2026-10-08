@@ -13,7 +13,7 @@ const email = z.string().trim().toLowerCase().max(254).pipe(z.email("Introduce u
 const password = z.string().min(10, "Mínimo 10 caracteres.").max(72).refine(value => new TextEncoder().encode(value).length <= 72, "Máximo 72 bytes.");
 export const SignupFormSchema = z.object({ name: z.string().trim().min(2).max(80), email, password, timezone: TimezoneSchema.default("America/Guayaquil") });
 export const LoginFormSchema = z.object({ email, password: z.string().min(1).max(72).refine(value => new TextEncoder().encode(value).length <= 72, "Máximo 72 bytes.") });
-export const EventFormSchema = z.object({ title, date: DateSchema, endDate: DateSchema.optional(), startTime: TimeSchema, endTime: TimeSchema, notes: z.string().max(2000).optional() });
+export const EventFormSchema = z.object({ title, date: DateSchema, endDate: DateSchema.optional(), startTime: TimeSchema, endTime: TimeSchema, notes: z.string().max(2000).optional(), location: z.string().trim().max(200).optional(), travelMinutes: z.coerce.number().int().min(0).max(180).default(0) });
 const schedulable = {
   title,
   durationMinutes: z.coerce.number().int().min(5).max(480),
@@ -21,13 +21,13 @@ const schedulable = {
   preferredWindow: z.enum(["MORNING", "AFTERNOON", "EVENING", "ANY"]),
 };
 export const HabitFormSchema = z.object({ ...schedulable, daysOfWeek: z.array(z.coerce.number().int().min(0).max(6)).min(1).transform(days => [...new Set(days)]), required: z.boolean().default(false) });
-export const TaskFormSchema = z.object({ ...schedulable, dueDate: z.union([DateSchema, z.literal("")]).optional() });
+export const TaskFormSchema = z.object({ ...schedulable, dueDate: z.union([DateSchema, z.literal("")]).optional(), energy: z.enum(["DEEP", "LIGHT"]).default("LIGHT") });
 export const AvailabilitySchema = z.object({ weekday: z.number().int().min(0).max(6), active: z.boolean(), start: TimeSchema, end: TimeSchema }).refine(value => value.start < value.end, "La hora final debe ser posterior al inicio.");
 export const SettingsFormSchema = z.object({
   name: z.string().trim().min(2).max(80), timezone: TimezoneSchema,
   dayStart: TimeSchema, dayEnd: TimeSchema, bufferMinutes: z.coerce.number().int().min(0).max(60),
   autoPlan: z.boolean(), carryOver: z.boolean(),
-  adaptiveAvailability: z.boolean(),
+  adaptiveAvailability: z.boolean(), adaptiveDurations: z.boolean().default(false), focusWindow: z.enum(["MORNING", "AFTERNOON", "EVENING", "LEARNED"]).default("MORNING"),
   availability: z.array(AvailabilitySchema).length(7).refine(rows => new Set(rows.map(row => row.weekday)).size === 7),
 }).refine(value => value.dayStart < value.dayEnd, "El fin debe ser posterior al inicio.");
 export const PasswordFormSchema = z.object({ currentPassword: z.string().min(1).max(72), newPassword: password });

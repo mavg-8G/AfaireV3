@@ -70,6 +70,28 @@ button {
   padding: .625rem .75rem;
   color: var(--ink);
 }
+/* Let form grid items shrink below native date/time controls' intrinsic width. */
+form label {
+  min-width: 0;
+}
+input.field[type="date"],
+input.field[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 2.75rem;
+  max-width: 100%;
+  overflow: hidden;
+}
+input.field[type="date"]::-webkit-date-and-time-value,
+input.field[type="time"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+input.field[type="date"]::-webkit-datetime-edit,
+input.field[type="time"]::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+}
 :focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
 button, summary { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .55; }

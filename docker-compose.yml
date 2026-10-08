@@ -6,6 +6,9 @@ x-app-environment: &app-environment
   REGISTRATION_MODE: ${REGISTRATION_MODE:-invite}
   REGISTRATION_CODE: ${REGISTRATION_CODE:-}
   TRUST_PROXY: ${TRUST_PROXY:-false}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-}
 
 x-logging: &default-logging
   driver: local
@@ -31,8 +34,7 @@ services:
     networks: [backend]
 
   migrate:
-    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}-migrate:${AFAIRE_VERSION:-local}
-    build: { context: ., target: migrate }
+    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}-migrate:${AFAIRE_VERSION:-cb5765639cda3e02a7c3b2f4f23e605bd8f227f0}
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     logging: *default-logging
@@ -43,8 +45,7 @@ services:
     networks: [backend]
 
   afaire-web:
-    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}:${AFAIRE_VERSION:-local}
-    build: { context: ., target: runtime }
+    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}:${AFAIRE_VERSION:-cb5765639cda3e02a7c3b2f4f23e605bd8f227f0}
     init: true
     read_only: true
     cap_drop: [ALL]
@@ -68,8 +69,7 @@ services:
     networks: [backend, edge]
 
   worker:
-    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}:${AFAIRE_VERSION:-local}
-    build: { context: ., target: runtime }
+    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}:${AFAIRE_VERSION:-cb5765639cda3e02a7c3b2f4f23e605bd8f227f0}
     init: true
     read_only: true
     cap_drop: [ALL]
@@ -89,33 +89,11 @@ services:
       start_period: 60s
       retries: 3
     restart: unless-stopped
-    networks: [backend]
+    networks: [backend, edge] # Web Push needs outbound HTTPS to browser push providers.
 
-  caddy:
-    profiles: ["https"]
-    image: caddy:2.10.2-alpine
-    read_only: true
-    cap_drop: [ALL]
-    cap_add: [NET_BIND_SERVICE]
-    security_opt: ["no-new-privileges:true"]
-    tmpfs: ["/tmp:rw,nosuid,nodev,noexec,size=64m"]
-    logging: *default-logging
-    ports: ["80:80", "443:443", "443:443/udp"]
-    environment:
-      DOMAIN: ${DOMAIN:-localhost}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      afaire-web: { condition: service_healthy }
-    restart: unless-stopped
-    networks: [edge]
 
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:
 networks:
   backend:
     internal: true

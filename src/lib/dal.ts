@@ -9,7 +9,7 @@ export const getCurrentUser = cache(async () => {
   if (!session?.user?.id) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, name: true, timezone: true, dayStart: true, dayEnd: true, bufferMinutes: true, autoPlan: true, carryOver: true, adaptiveAvailability: true, onboardingCompleted: true, sessionVersion: true, availability: { orderBy: { weekday: "asc" } } },
+    select: { id: true, email: true, name: true, timezone: true, dayStart: true, dayEnd: true, bufferMinutes: true, autoPlan: true, carryOver: true, adaptiveAvailability: true, adaptiveDurations: true, focusWindow: true, onboardingCompleted: true, sessionVersion: true, availability: { orderBy: { weekday: "asc" } } },
   });
   if (!user || user.sessionVersion !== session.user.sessionVersion) return null;
   return user;

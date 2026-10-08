@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { TaskFormSchema, type ActionResult } from "@/lib/definitions";
 import { requireUser } from "@/lib/dal";
 import { withUserLock, actionError, DomainError } from "@/lib/transaction";
+import { setEventStatus } from "@/lib/calendar";
 import { dateOnly } from "@/lib/time";
 import type { Prisma } from "@prisma/client";
 
@@ -11,7 +12,7 @@ function parse(formData: FormData) {
   if (!result.success) throw new DomainError("Revisa el título, la duración y la fecha.");
   return { ...result.data, dueDate: result.data.dueDate ? dateOnly(result.data.dueDate) : null };
 }
-function refresh() { revalidatePath("/inbox"); revalidatePath("/"); revalidatePath("/week"); }
+function refresh() { revalidatePath("/inbox"); revalidatePath("/"); revalidatePath("/week"); revalidatePath("/review"); }
 async function owned(tx: Prisma.TransactionClient, userId: string, id: string) {
   const task = await tx.task.findFirst({ where: { id, userId, archived: false } });
   if (!task) throw new DomainError("Tarea no encontrada.");
@@ -41,7 +42,8 @@ export async function completeTask(id: string) {
   try {
     await withUserLock(user.id, async tx => {
       await owned(tx, user.id, id);
-      await tx.event.updateMany({ where: { taskId: id, userId: user.id, status: { in: ["PENDING", "IN_PROGRESS"] } }, data: { status: "DONE" } });
+      const active = await tx.event.findMany({ where: { taskId: id, userId: user.id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
+      for (const event of active) await setEventStatus(tx, user.id, event.id, "DONE");
       await tx.task.update({ where: { id }, data: { status: "DONE" } });
     }); refresh(); return { ok: true };
   } catch (error) { return actionError(error); }

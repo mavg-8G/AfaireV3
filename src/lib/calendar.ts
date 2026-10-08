@@ -15,13 +15,14 @@ export function parseEvent(formData: FormData, timezone: string) {
   } catch (error) { throw new DomainError(error instanceof Error ? error.message : "Horario inválido."); }
   if (endsAt <= startsAt) throw new DomainError("El fin debe ser posterior al inicio. Para una cita nocturna, cambia la fecha final.");
   if (endsAt.getTime() - startsAt.getTime() > 7 * 86400_000) throw new DomainError("Una cita puede durar como máximo 7 días.");
-  return { title: parsed.data.title, startsAt, endsAt, notes: parsed.data.notes || null, planningDate: dateOnly(parsed.data.date) };
+  return { title: parsed.data.title, startsAt, endsAt, notes: parsed.data.notes || null, location: parsed.data.location || null, travelMinutes: parsed.data.location ? parsed.data.travelMinutes : 0, planningDate: dateOnly(parsed.data.date) };
 }
-export async function assertFree(tx: Prisma.TransactionClient, userId: string, startsAt: Date, endsAt: Date, ignoreId?: string) {
-  const overlap = await tx.event.findFirst({ where: {
+export async function assertFree(tx: Prisma.TransactionClient, userId: string, startsAt: Date, endsAt: Date, ignoreId?: string, travelMinutes = 0) {
+  const candidates = await tx.event.findMany({ where: {
     userId, ...(ignoreId ? { id: { not: ignoreId } } : {}),
-    status: { notIn: ["SKIPPED", "CANCELLED"] }, startsAt: { lt: endsAt }, endsAt: { gt: startsAt },
+    status: { notIn: ["SKIPPED", "CANCELLED"] }, startsAt: { lt: new Date(endsAt.getTime() + 180 * 60_000) }, endsAt: { gt: new Date(startsAt.getTime() - 180 * 60_000) },
   } });
+  const overlap = candidates.find(event => event.startsAt.getTime() - event.travelMinutes * 60_000 < endsAt.getTime() && event.endsAt.getTime() > startsAt.getTime() - travelMinutes * 60_000);
   if (overlap) throw new DomainError(`El horario coincide con «${overlap.title}». Mueve o quita ese bloque primero.`);
 }
 export async function ownedEvent(tx: Prisma.TransactionClient, userId: string, id: string) {
@@ -31,8 +32,8 @@ export async function ownedEvent(tx: Prisma.TransactionClient, userId: string, i
 }
 export async function setEventStatus(tx: Prisma.TransactionClient, userId: string, id: string, status: EventStatus) {
   const event = await ownedEvent(tx, userId, id);
-  if (status === "PENDING") await assertFree(tx, userId, event.startsAt, event.endsAt, id);
-  await tx.event.update({ where: { id }, data: { status } });
+  if (status === "PENDING") await assertFree(tx, userId, event.startsAt, event.endsAt, id, event.travelMinutes);
+  await tx.event.update({ where: { id }, data: { status, ...(status === "IN_PROGRESS" ? { startedAt: event.startedAt ?? new Date(), actualMinutes: null } : status === "DONE" && event.startedAt ? { actualMinutes: Math.max(1, Math.min(480, Math.round((Date.now() - event.startedAt.getTime()) / 60_000))) } : status === "PENDING" ? { startedAt: null, actualMinutes: null } : {}) } });
   if (event.occurrenceId) await tx.habitOccurrence.updateMany({ where: { id: event.occurrenceId, userId }, data: { status: status === "CANCELLED" ? "SKIPPED" : status } });
   if (event.taskId) await tx.task.updateMany({ where: { id: event.taskId, userId, archived: false }, data: { status: status === "DONE" || (event.status === "DONE" && status === "CANCELLED") ? "DONE" : ["CANCELLED", "SKIPPED"].includes(status) ? "INBOX" : "SCHEDULED" } });
 }

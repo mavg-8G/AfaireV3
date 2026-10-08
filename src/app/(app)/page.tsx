@@ -1,3 +1,4 @@
+import { OfflineDaySync } from "@/components/OfflineDaySync";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/dal";
@@ -21,7 +22,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const date = parsed.data; const bounds = calendarDayBounds(date, user.timezone);
   const windows = availabilityWindows(user, date, user.timezone);
   const [busyEvents, plan, inboxCount] = await Promise.all([
-    prisma.event.findMany({ where: { userId: user.id, status: { not: "CANCELLED" }, startsAt: { lt: addMinutesUtc(bounds.end, user.bufferMinutes) }, endsAt: { gt: addMinutesUtc(bounds.start, -user.bufferMinutes) } }, orderBy: { startsAt: "asc" } }),
+    prisma.event.findMany({ where: { userId: user.id, status: { not: "CANCELLED" }, startsAt: { lt: addMinutesUtc(bounds.end, user.bufferMinutes + 180) }, endsAt: { gt: addMinutesUtc(bounds.start, -user.bufferMinutes - 180) } }, orderBy: { startsAt: "asc" }, include: { series: true } }),
     prisma.dayPlan.findUnique({ where: { userId_date: { userId: user.id, date: dateOnly(date) } } }),
     prisma.task.count({ where: { userId: user.id, archived: false, status: "INBOX" } }),
   ]);
@@ -31,7 +32,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const details = Array.isArray(plan?.details) ? plan.details as unknown as Unscheduled[] : [];
   return <div className="space-y-7">
     <div className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-xs uppercase tracking-[.22em] text-sage">{date === today ? `Hola, ${user.name.split(" ")[0]}` : "Tu agenda"}</p><h1 className="mt-3 text-4xl first-letter:uppercase sm:text-5xl">{formatDayHeading(date, user.timezone)}</h1><p className="mt-3 text-sm text-muted">{availabilitySummary(user, weekdayForDate(date))} · {user.timezone}</p>{user.adaptiveAvailability && <Link href="/settings" className="mt-2 inline-block text-xs text-sage">Disponibilidad que aprende contigo ↗</Link>}</div><PlanButton date={date} existing={Boolean(plan)} disabled={date < today || !windows.length} /></div>
-    <DateNavigator date={date} today={today} />
+    <DateNavigator date={date} today={today} />{date === today && <OfflineDaySync revision={events.map(e => `${e.id}:${e.updatedAt.toISOString()}`).join("|")} />}
     {date === today && <NowBanner events={events} timezone={user.timezone} now={now} />}
     <div className="grid grid-cols-3 gap-3">{[[String(active.length), "bloques en tu día"], [`${done}/${active.length}`, "completados"], [String(Math.floor(free)), "minutos disponibles"]].map(([value, label]) => <div key={label} className="rounded-2xl border border-line bg-card px-4 py-4"><p className="display text-3xl">{value}</p><p className="mt-1 text-xs text-muted">{label}</p></div>)}</div>
     {details.length > 0 && <section className="rounded-2xl border border-gold/40 bg-[#fff8e3] p-5"><h2 className="text-xl">Quedó pendiente de encontrar su lugar</h2><ul className="mt-3 space-y-2 text-sm">{details.map(item => <li key={item.key}><span className="font-medium">{item.title}{item.required ? " · Esencial" : ""}</span><span className="mt-0.5 block text-xs text-muted">{item.reason}</span></li>)}</ul></section>}

@@ -4,6 +4,10 @@ Fecha: 8 de octubre de 2026. Alcance: aplicación web para varios usuarios, con 
 
 Actualización solicitada durante el desarrollo: aprender disponibilidad con el uso. Se incorporan muestras por fecha y franja horaria, ventanas separadas para madrugada y día, ajustes progresivos de días y horarios y controles para pausar o reiniciar el aprendizaje. El README describe las reglas y la implementación entregada.
 
+## Ampliación aplicada · 8 de octubre de 2026
+
+Se incorporan recurrencias simples con fin explícito y edición por ocurrencia o desde una fecha, Web Push configurable, copia del día en lectura offline, registros y reintentos del worker visibles en Ajustes, rachas y revisión semanal, tiempos reales con ajuste opcional de estimaciones, tareas profundas/ligeras y minutos manuales de traslado. El README documenta las reglas finales, los límites y la configuración VAPID.
+
 ## 1. Resultado esperado
 
 Cada persona registra sus citas, define sus rutinas y guarda tareas pendientes. Afaire organiza esas actividades dentro del tiempo disponible, respetando las citas fijas, los descansos y las preferencias de horario. Cuando el día cambia, genera una agenda automáticamente si el usuario activó esa opción.
@@ -162,7 +166,7 @@ La recuperación por correo y la verificación de email se añadirán antes de a
 | `Dockerfile` | Build multietapa, instalación desde lockfile, generación del cliente Prisma, compilación Next.js y runtime sin privilegios. |
 | `.dockerignore` | Excluir secretos, dependencias locales y resultados de compilación. |
 | `docker-compose.yml` | `db`, `app`, `worker` y migraciones puntuales; comprobaciones de salud y reinicio de servicios persistentes. |
-| `Caddyfile` | Dominio y HTTPS; uso opcional si el VPS ya tiene proxy. |
+| `ops/Caddyfile.existing-proxy` | Bloque de Afaire para añadir al Caddy existente. |
 | `.env.example` | Variables de conexión, autenticación, dominio y operación, sin credenciales reales. |
 | Guía de despliegue | Instalación, migración, arranque, actualización, comprobación y recuperación. |
 | Scripts de backup/restauración | Copia lógica de PostgreSQL, retención y restauración verificada. |
@@ -207,6 +211,6 @@ Las pruebas del motor y de concurrencia son prioritarias por el riesgo de perder
 
 ## 12. Ampliaciones posteriores
 
-Arrastrar bloques, citas recurrentes, dividir tareas largas, exportar/importar ICS, integración con Google Calendar, notificaciones push, modo PWA y estadísticas semanales. La IA podrá ayudar a interpretar texto o sugerir duraciones cuando las reglas de agenda estén consolidadas.
+Pendientes actuales: arrastrar bloques, recurrencias avanzadas o sin fecha final, dividir tareas largas, exportar/importar ICS e integración con Google Calendar. Las citas recurrentes simples, Web Push, PWA con copia offline de hoy y estadísticas semanales ya están implementadas; su configuración y límites figuran en el README. La IA podrá ayudar a interpretar texto o sugerir duraciones cuando las reglas de agenda estén consolidadas.
 
 La primera versión se considera terminada cuando varios usuarios pueden gestionar y generar su agenda privada, el worker funciona sin sesiones abiertas y el despliegue Docker conserva y permite recuperar los datos.

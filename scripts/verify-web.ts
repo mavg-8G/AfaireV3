@@ -60,7 +60,7 @@ try {
   const emailA = `http-a-${stamp}@example.invalid`; const emailB = `http-b-${stamp}@example.invalid`;
   const titleA = `Privado A ${stamp}`; const titleB = `<img src=x onerror=alert('${stamp}')>`;
   for (const [email, title] of [[emailA, titleA], [emailB, titleB]]) {
-    const user = await prisma.user.create({ data: { name: "Prueba HTTP", email, passwordHash: await bcrypt.hash(password, 12), onboardingCompleted: true, tasks: { create: { title, durationMinutes: 30 } } } });
+    const user = await prisma.user.create({ data: { name: "Prueba HTTP", email, passwordHash: await bcrypt.hash(password, 12), onboardingCompleted: true, events: { create: { title, startsAt: new Date(), endsAt: new Date(Date.now() + 30 * 60_000) } }, tasks: { create: { title, durationMinutes: 30 } } } });
     ids.push(user.id);
   }
   const authA = await login(emailA, password); const authB = await login(emailB, password);
@@ -71,6 +71,15 @@ try {
     assert.ok(bodyA.includes(titleA)); assert.ok(!bodyB.includes(titleA)); assert.ok(!bodyA.includes(stamp + "')"));
     assert.ok(bodyB.includes("&lt;img")); assert.ok(!bodyB.includes(titleB));
   });
+  const offlineAnonymous = await fetch(new URL("/api/offline-today", base));
+  check("Copia offline requiere sesión", () => assert.equal(offlineAnonymous.status, 401));
+  const offlineA = await fetch(new URL("/api/offline-today", base), { headers: { cookie: cookieHeader(authA.jar) } });
+  const snapshotA = await offlineA.json() as { owner: string; expiresAt: string; events: { title: string }[] };
+  check("Copia del día privada, con caducidad y aislada por cuenta", () => { assert.equal(offlineA.status, 200); assert.match(offlineA.headers.get("cache-control") ?? "", /no-store/); assert.equal(snapshotA.owner, ids[0]); assert.ok(Date.parse(snapshotA.expiresAt) > Date.now()); assert.ok(snapshotA.events.some(e => e.title === titleA)); assert.ok(!snapshotA.events.some(e => e.title === titleB)); });
+  for (const path of ["/", "/habits", "/review", "/settings"]) {
+    const page = await fetch(new URL(path, base), { headers: { cookie: cookieHeader(authA.jar) } });
+    check("Página autenticada disponible: " + path, () => assert.equal(page.status, 200));
+  }
   for (const origin of ["https://evil.invalid", null]) {
     const headers: Record<string, string> = { cookie: cookieHeader(authA.jar) }; if (origin) headers.origin = origin;
     const response = await fetch(new URL("/api/activity", base), { method: "POST", headers });

@@ -30,6 +30,12 @@ model User {
   availability        Availability[]
   occurrences         HabitOccurrence[]
   usageSamples        UsageSample[]
+  series              EventSeries[]
+  pushSubscriptions   PushSubscription[]
+  notificationSettings NotificationSettings?
+  workerRuns          WorkerRun[]
+  adaptiveDurations   Boolean @default(false)
+  focusWindow         String @default("MORNING")
 }
 
 model Availability {
@@ -59,6 +65,14 @@ model Event {
   source       EventSource @default(MANUAL)
   status       EventStatus @default(PENDING)
   notes        String?
+  location     String?
+  travelMinutes Int @default(0)
+  seriesId     String?
+  series       EventSeries? @relation(fields: [seriesId, userId], references: [id, userId], onDelete: NoAction)
+  recurrenceDate DateTime? @db.Date
+  startedAt    DateTime? @db.Timestamptz(3)
+  actualMinutes Int?
+  estimatedMinutes Int?
   habitId      String?
   habit        Habit?      @relation(fields: [habitId, userId], references: [id, userId], onDelete: NoAction)
   occurrenceId String?     @unique
@@ -71,6 +85,7 @@ model Event {
   @@index([userId, status])
   @@index([userId, planningDate])
   @@unique([occurrenceId, userId])
+  @@unique([seriesId, recurrenceDate])
 }
 
 model Habit {
@@ -118,6 +133,7 @@ model Task {
   priority        Int             @default(2)
   preferredWindow PreferredWindow @default(ANY)
   archived        Boolean         @default(false)
+  energy          String          @default("LIGHT")
   createdAt       DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
   events          Event[]
@@ -146,6 +162,72 @@ model AccessAttempt {
 model WorkerHeartbeat {
   id        String   @id @default("daily-planner")
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model EventSeries {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title String
+  notes String?
+  location String?
+  travelMinutes Int @default(0)
+  timezone String
+  frequency String
+  weekdays Int[]
+  startDate DateTime @db.Date
+  until DateTime @db.Date
+  startTime String
+  endTime String
+  endDayOffset Int @default(0)
+  events Event[]
+  @@unique([id, userId])
+}
+
+model NotificationSettings {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  upcoming Boolean @default(true)
+  leadMinutes Int @default(10)
+  dailySummary Boolean @default(true)
+  summaryTime String @default("08:00")
+  dueTomorrow Boolean @default(true)
+  dueTime String @default("18:00")
+}
+
+model PushSubscription {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint String @unique
+  p256dh String
+  auth String
+  sessionVersion Int
+  deliveries PushDelivery[]
+}
+
+model PushDelivery {
+  id String @id @default(cuid())
+  subscriptionId String
+  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  key String
+  sentAt DateTime? @db.Timestamptz(3)
+  attemptedAt DateTime @default(now()) @db.Timestamptz(3)
+  attempts Int @default(0)
+  error String?
+  @@unique([subscriptionId, key])
+}
+
+model WorkerRun {
+  retryAt DateTime? @db.Timestamptz(3)
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date DateTime @db.Date
+  status String
+  message String?
+  attemptedAt DateTime @default(now()) @db.Timestamptz(3)
+  @@index([userId, attemptedAt])
 }
 
 model UsageSample {

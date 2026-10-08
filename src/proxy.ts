@@ -22,7 +22,7 @@ export function proxy(request: NextRequest) {
   }
   const token = request.cookies.get("next-auth.session-token") ?? request.cookies.get("__Secure-next-auth.session-token");
   // Optimistic navigation only; the DAL validates the session and its version.
-  const privatePage = /^\/(?:$|week(?:\/|$)|habits(?:\/|$)|inbox(?:\/|$)|settings(?:\/|$)|onboarding(?:\/|$))/.test(request.nextUrl.pathname);
+  const privatePage = /^\/(?:$|week(?:\/|$)|habits(?:\/|$)|inbox(?:\/|$)|settings(?:\/|$)|review(?:\/|$)|onboarding(?:\/|$))/.test(request.nextUrl.pathname);
   if (privatePage && !token) return decorate(NextResponse.redirect(new URL("/login", configuredUrl)));
   return decorate(NextResponse.next({ request: { headers: requestHeaders } }));
 }

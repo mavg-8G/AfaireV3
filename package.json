@@ -18,35 +18,42 @@
     "db:local": "tsx scripts/local-db.ts",
     "worker": "tsx scripts/worker.ts",
     "worker:build": "esbuild scripts/worker.ts --bundle --platform=node --packages=external --format=cjs --outfile=dist/worker.cjs",
-    "account:reset": "tsx scripts/reset-password.ts"
+    "account:reset": "tsx scripts/reset-password.ts",
+    "push:keys": "node scripts/generate-push-keys.mjs"
   },
   "dependencies": {
-    "next": "16.4.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "@date-fns/tz": "1.5.0",
     "@prisma/client": "6.19.3",
-    "next-auth": "4.24.15",
     "bcryptjs": "3.0.3",
     "date-fns": "4.1.0",
-    "@date-fns/tz": "1.5.0",
-    "zod": "4.6.5",
+    "dotenv": "17.2.3",
+    "next": "16.4.0",
+    "next-auth": "4.24.15",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "server-only": "0.0.1",
-    "dotenv": "17.2.3"
+    "web-push": "3.6.7",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "3.6.4",
+    "embedded-postgres": "18.4.0-beta.17",
+    "esbuild": "0.25.12",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "prisma": "6.19.3",
-    "tsx": "4.20.6",
-    "esbuild": "0.25.12",
-    "embedded-postgres": "18.4.0-beta.17",
     "tailwindcss": "^4",
+    "tsx": "4.20.6",
     "typescript": "^5"
   },
-  "engines": { "node": ">=22.12.0" },
-  "overrides": { "deepmerge-ts": "8.0.2" }
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2"
+  }
 }
