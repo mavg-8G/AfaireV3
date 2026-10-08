@@ -75,7 +75,11 @@ Compose espera a que PostgreSQL esté disponible, ejecuta `prisma migrate deploy
 
 Las imágenes se construyen en GitHub Actions mediante el `Dockerfile`. El VPS utiliza las imágenes publicadas en GHCR y tu proxy Docker existente.
 
-## Web Push
+## Instalación existente sin checkout Git
+
+Si el servidor solo contiene `.env` y `docker-compose.yml`, usa `ops/update-standalone.sh` colocado en esa misma carpeta y ejecútalo con `sudo sh ./update-standalone.sh SHA_COMPLETO_PUBLICADO`. No necesita permiso ejecutable. El actualizador conserva el Compose original y sus volúmenes, valida las imágenes antes de detener servicios, respalda PostgreSQL y aplica migraciones. Guarda la versión y `COMPOSE_FILE` en `.env`, y añade `docker-compose.update.yml` con las imágenes y la configuración push. La versión debe tener imágenes publicadas en GHCR. Requiere los servicios `db`, `afaire-web`, `worker` y `migrate` y Docker Compose v2.
+
+## Configurar Web Push
 
 Genera una vez las claves con `npm run push:keys` (también puede ejecutarse en la imagen migrate). Guarda `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT=https://afaire.espectro.uk` en el `.env` del servidor; conserva el par en los siguientes despliegues. Compose las entrega a web y worker. El worker ahora usa también la red `edge` para acceder por HTTPS a los proveedores push. No se añade un puerto público al worker ni a PostgreSQL.
 

@@ -59,3 +59,4 @@ for UPDATE_CASE in success pull-failure migrate-failure; do
     esac
     echo "Updater: $UPDATE_CASE passed"
 done
+sh "$root/tests/update-standalone.test.sh"
