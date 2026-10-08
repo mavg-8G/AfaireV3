@@ -1,0 +1,90 @@
+# For your existing proxy in /opt/docker/proxy.
+# Validate with your installed Caddy before reloading. No extra Caddy is needed.
+(common-security) {
+	encode zstd gzip
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		Strict-Transport-Security "max-age=31536000"
+		?Referrer-Policy strict-origin-when-cross-origin
+		?X-DNS-Prefetch-Control off
+	}
+	log {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request>headers delete
+				request>uri delete
+				resp_headers>Set-Cookie delete
+			}
+		}
+	}
+}
+
+n8n.espectro.uk {
+	import common-security
+	reverse_proxy n8n:5678
+}
+
+estado.espectro.uk {
+	import common-security
+	reverse_proxy uptime-kuma:3001
+}
+
+libros.espectro.uk {
+	import common-security
+	reverse_proxy kavita:5000
+}
+
+archivos.espectro.uk {
+	import common-security
+	reverse_proxy filebrowser:80
+}
+
+monitor.espectro.uk {
+	import common-security
+	reverse_proxy beszel:8090
+}
+
+admin.espectro.uk {
+	import common-security
+	reverse_proxy http://host.docker.internal:10000
+}
+
+memos.espectro.uk {
+	import common-security
+	reverse_proxy memos:5230
+}
+
+dockhand.espectro.uk {
+	import common-security
+	reverse_proxy dockhand:3000
+}
+
+notes.espectro.uk {
+	import common-security
+	reverse_proxy trilium:8080
+}
+
+affine.espectro.uk {
+	import common-security
+	reverse_proxy affine:3010
+}
+
+main.espectro.uk {
+	import common-security
+	reverse_proxy app:13052
+}
+
+afaire.espectro.uk {
+	import common-security
+	# CSP, frame policy and private cache controls come from Afaire itself.
+	request_body {
+		max_size 1MB
+	}
+	reverse_proxy afaire-web:3000 {
+		# Overwrite any client-supplied value before enabling TRUST_PROXY=true.
+		header_up X-Afaire-Client-IP {remote_host}
+	}
+}

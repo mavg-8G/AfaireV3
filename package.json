@@ -1,0 +1,52 @@
+{
+  "name": "afaire",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "node scripts/start.mjs",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:integration": "tsx --test tests/integration/*.test.ts",
+    "test:web": "tsx scripts/verify-web.ts",
+    "pwa:icons": "node scripts/generate-icons.mjs",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "db:local": "tsx scripts/local-db.ts",
+    "worker": "tsx scripts/worker.ts",
+    "worker:build": "esbuild scripts/worker.ts --bundle --platform=node --packages=external --format=cjs --outfile=dist/worker.cjs",
+    "account:reset": "tsx scripts/reset-password.ts"
+  },
+  "dependencies": {
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@prisma/client": "6.19.3",
+    "next-auth": "4.24.15",
+    "bcryptjs": "3.0.3",
+    "date-fns": "4.1.0",
+    "@date-fns/tz": "1.5.0",
+    "zod": "4.6.5",
+    "server-only": "0.0.1",
+    "dotenv": "17.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "prisma": "6.19.3",
+    "tsx": "4.20.6",
+    "esbuild": "0.25.12",
+    "embedded-postgres": "18.4.0-beta.17",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "engines": { "node": ">=22.12.0" },
+  "overrides": { "deepmerge-ts": "8.0.2" }
+}

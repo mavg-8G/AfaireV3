@@ -1,0 +1,8 @@
+# Use your existing Caddy; PROXY_NETWORK must be its actual Docker network name.
+services:
+  afaire-web:
+    networks: [backend, edge, proxy]
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?Define la red Docker existente de Caddy en PROXY_NETWORK}

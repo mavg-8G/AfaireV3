@@ -94,74 +94,28 @@ Las pruebas de integración necesitan la base configurada y migrada. Crean cuent
 
 El build no necesita una base accesible: las páginas privadas se renderizan al recibir la petición. Los tests de integración y los flujos web sí necesitan PostgreSQL.
 
-## VPS con Docker Compose
+## VPS y actualizaciones desde GitHub
 
-Requiere Docker Engine y Compose v2. Copia el proyecto y crea `.env` desde la plantilla. Configura:
-
-| Variable | Uso |
-| --- | --- |
-| `POSTGRES_PASSWORD` | Contraseña fuerte y URL-safe; se recomienda hexadecimal. |
-| `POSTGRES_USER`, `POSTGRES_DB` | Usuario y nombre de base; por defecto `afaire`. |
-| `AUTH_SECRET` | Secreto aleatorio de al menos 32 bytes. |
-| `NEXTAUTH_URL` | URL pública completa: `https://agenda.tudominio.com`. |
-| `DOMAIN` | Dominio sin protocolo, para Caddy. |
-| `REGISTRATION_MODE` | `invite` para usuarios invitados o `open` para registro sin código. |
-| `REGISTRATION_CODE` | Código privado que tú compartes con tus invitados. |
-| `APP_PORT` | Puerto local del host para un proxy existente; por defecto 3000. |
-
-Compose construye la conexión interna a PostgreSQL con las variables `POSTGRES_*`; el `DATABASE_URL` local de la plantilla no se usa en los contenedores.
-
-### Con Caddy incluido
-
-Apunta el DNS del dominio al VPS y permite 80/443. Después:
+La guía [ops/DEPLOYMENT.md](ops/DEPLOYMENT.md) incluye la instalación en `afaire.espectro.uk`, integración con tu Caddy existente y publicación de imágenes con GitHub Actions/GHCR. Después de subir el código y esperar a que Actions termine, actualiza desde el VPS con:
 
 ```sh
-docker compose --profile https up -d --build
+sh /opt/afaire/scripts/update.sh
 ```
 
-Caddy gestiona HTTPS. PostgreSQL queda en una red interna sin puerto público. La app también se publica en `127.0.0.1:3000` para facilitar diagnóstico local; no se expone directamente a Internet.
+El servidor descarga imágenes del mismo commit, crea un respaldo, aplica migraciones y verifica web y worker. No necesita compilar ni copiar archivos manualmente. `.env` y el volumen PostgreSQL se conservan. Si una migración falla, los servicios quedan detenidos para su revisión.
 
-### Con Nginx o Caddy existente
-
-No actives el perfil HTTPS:
-
-```sh
-docker compose up -d --build
-```
-
-Configura tu proxy hacia `http://127.0.0.1:3000`. Debe conservar el Host y enviar `X-Forwarded-Proto` y `X-Forwarded-For`. Usa la URL HTTPS real en `NEXTAUTH_URL`.
-
-### Servicios y comprobaciones
-
-- `db`: PostgreSQL con volumen persistente y comprobación de disponibilidad.
-- `migrate`: aplica las migraciones y termina. La app y el worker esperan a que finalice correctamente.
-- `app`: Next.js standalone, usuario sin privilegios y `/api/health`.
-- `worker`: el mismo runtime, ejecutando el planificador cada minuto. Un plan ya existente no se regenera automáticamente.
-- `caddy`: proxy opcional con volúmenes para certificados.
+Los servicios son `afaire-web`, `worker`, `migrate` y `db`; `caddy` es opcional. Por defecto no hay puertos publicados para la web ni para PostgreSQL. `docker-compose.proxy.yml` conecta solo la web a la red de tu proxy Docker; `docker-compose.host.yml` publica la web en loopback para un proxy del host. No actives un segundo Caddy si ya usas 80/443.
 
 ```sh
 docker compose ps
-docker compose logs --tail=100 app worker migrate
-curl -f http://127.0.0.1:3000/api/health
+docker compose logs --tail=100 afaire-web worker
 ```
 
-El worker mantiene un heartbeat en PostgreSQL, utilizado por su healthcheck. Reintenta fallos con una espera creciente de hasta cinco minutos. Tras reiniciarse solo recupera el día actual si aún queda disponibilidad.
+## Instalación como webapp y seguridad
 
-### Actualizaciones
+El botón **Instalar Afaire** permite instalar la PWA o muestra los pasos correspondientes al navegador. Incluye manifest, iconos y pantalla genérica sin conexión. La agenda requiere conexión; el service worker no almacena información privada.
 
-Construye las nuevas imágenes antes de detener los servicios y crea una copia de datos. Para aplicar una actualización con una única ejecución de migraciones:
-
-```sh
-docker compose build
-sh scripts/backup.sh
-docker compose stop app worker
-docker compose run --rm migrate
-docker compose up -d --no-deps app worker
-```
-
-Si la migración falla, no arranques la nueva versión; conserva la copia y revisa los logs. No uses `prisma db push` en producción. Cambiar de imagen no revierte cambios de datos.
-
-Una máquina con 2 vCPU y 2–4 GB de RAM es un punto de partida para pocos usuarios. Construir las imágenes fuera del VPS reduce el pico de memoria; ajusta los recursos después de medir el uso real.
+Consulta [SECURITY.md](SECURITY.md) para cookies, CSP, protección de mutaciones, límites de acceso, secretos y seguridad Docker. La instalación en producción requiere HTTPS. Para comprobar HTTP con la web y PostgreSQL activos: `npm run test:web`.
 
 ## Copias y recuperación
 

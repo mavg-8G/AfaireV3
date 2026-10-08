@@ -1,0 +1,7 @@
+[Unit]
+Description=Afaire PostgreSQL backup
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/afaire
+ExecStart=/bin/sh /opt/afaire/scripts/backup.sh

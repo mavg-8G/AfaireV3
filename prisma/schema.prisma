@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  passwordHash        String
+  name                String
+  timezone            String   @default("America/Guayaquil")
+  dayStart            String   @default("08:00")
+  dayEnd              String   @default("22:00")
+  bufferMinutes       Int      @default(10)
+  autoPlan            Boolean  @default(false)
+  carryOver           Boolean  @default(true)
+  adaptiveAvailability Boolean @default(true)
+  onboardingCompleted Boolean  @default(false)
+  sessionVersion      Int      @default(0)
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
+  events              Event[]
+  habits              Habit[]
+  tasks               Task[]
+  dayPlans            DayPlan[]
+  availability        Availability[]
+  occurrences         HabitOccurrence[]
+  usageSamples        UsageSample[]
+}
+
+model Availability {
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekday Int
+  active  Boolean @default(true)
+  start   String
+  end     String
+  learnedWindows Json @default("[]")
+  learnedActive Boolean?
+  learningReason String?
+  learnedAt DateTime? @db.Timestamptz(3)
+  @@unique([userId, weekday])
+}
+
+model Event {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  startsAt     DateTime    @db.Timestamptz(3)
+  endsAt       DateTime    @db.Timestamptz(3)
+  planningDate DateTime?   @db.Date
+  locked       Boolean     @default(true)
+  source       EventSource @default(MANUAL)
+  status       EventStatus @default(PENDING)
+  notes        String?
+  habitId      String?
+  habit        Habit?      @relation(fields: [habitId, userId], references: [id, userId], onDelete: NoAction)
+  occurrenceId String?     @unique
+  occurrence   HabitOccurrence? @relation(fields: [occurrenceId, userId], references: [id, userId], onDelete: NoAction)
+  taskId       String?
+  task         Task?       @relation(fields: [taskId, userId], references: [id, userId], onDelete: NoAction)
+  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime    @updatedAt @db.Timestamptz(3)
+  @@index([userId, startsAt])
+  @@index([userId, status])
+  @@index([userId, planningDate])
+  @@unique([occurrenceId, userId])
+}
+
+model Habit {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  durationMinutes Int
+  priority        Int             @default(2)
+  required        Boolean         @default(false)
+  preferredWindow PreferredWindow @default(ANY)
+  daysOfWeek      Int[]
+  active          Boolean         @default(true)
+  archived        Boolean         @default(false)
+  createdAt       DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
+  events          Event[]
+  occurrences     HabitOccurrence[]
+  @@unique([id, userId])
+  @@index([userId, active])
+}
+
+model HabitOccurrence {
+  id      String      @id @default(cuid())
+  userId  String
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitId String
+  habit   Habit       @relation(fields: [habitId, userId], references: [id, userId], onDelete: NoAction)
+  date    DateTime    @db.Date
+  status  EventStatus @default(PENDING)
+  event   Event?
+  @@unique([habitId, date])
+  @@unique([id, userId])
+  @@index([userId, date])
+}
+
+model Task {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  durationMinutes Int             @default(30)
+  dueDate         DateTime?       @db.Date
+  status          TaskStatus      @default(INBOX)
+  priority        Int             @default(2)
+  preferredWindow PreferredWindow @default(ANY)
+  archived        Boolean         @default(false)
+  createdAt       DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
+  events          Event[]
+  @@unique([id, userId])
+  @@index([userId, status])
+}
+
+model DayPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  generatedAt DateTime @default(now()) @db.Timestamptz(3)
+  version     Int      @default(1)
+  skipped     String[] @default([])
+  details     Json     @default("[]")
+  @@unique([userId, date])
+}
+
+model AccessAttempt {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime @db.Timestamptz(3)
+}
+
+model WorkerHeartbeat {
+  id        String   @id @default("daily-planner")
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model UsageSample {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date DateTime @db.Date
+  weekday Int
+  minute Int
+  timezone String
+  observedAt DateTime @default(now()) @db.Timestamptz(3)
+  @@unique([userId, date, minute, timezone])
+  @@index([userId, observedAt])
+}
+
+enum EventSource {
+  MANUAL
+  AUTO
+  HABIT
+}
+enum EventStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  SKIPPED
+  CANCELLED
+}
+enum TaskStatus {
+  INBOX
+  SCHEDULED
+  DONE
+  CANCELLED
+}
+enum PreferredWindow {
+  MORNING
+  AFTERNOON
+  EVENING
+  ANY
+}

@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+.local-db
+dist
+backups
+test-results
+audit-report.json
+*.tsbuildinfo
+npm-debug.log*

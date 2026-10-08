@@ -1,0 +1,122 @@
+name: afaire
+x-app-environment: &app-environment
+  DATABASE_URL: postgresql://${POSTGRES_USER:-afaire}:${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}@db:5432/${POSTGRES_DB:-afaire}
+  AUTH_SECRET: ${AUTH_SECRET:?Define AUTH_SECRET en .env}
+  NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+  REGISTRATION_MODE: ${REGISTRATION_MODE:-invite}
+  REGISTRATION_CODE: ${REGISTRATION_CODE:-}
+  TRUST_PROXY: ${TRUST_PROXY:-false}
+
+x-logging: &default-logging
+  driver: local
+  options: { max-size: "10m", max-file: "3" }
+
+services:
+  db:
+    image: postgres:18.4-bookworm
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-afaire}
+      POSTGRES_DB: ${POSTGRES_DB:-afaire}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [backend]
+
+  migrate:
+    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}-migrate:${AFAIRE_VERSION:-local}
+    build: { context: ., target: migrate }
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    logging: *default-logging
+    environment: *app-environment
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+    networks: [backend]
+
+  afaire-web:
+    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}:${AFAIRE_VERSION:-local}
+    build: { context: ., target: runtime }
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m
+      - /app/.next/cache:rw,nosuid,nodev,noexec,uid=1000,gid=1000,mode=0700,size=128m
+    logging: *default-logging
+    environment: *app-environment
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+    networks: [backend, edge]
+
+  worker:
+    image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}:${AFAIRE_VERSION:-local}
+    build: { context: ., target: runtime }
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    tmpfs: ["/tmp:rw,nosuid,nodev,noexec,size=64m"]
+    logging: *default-logging
+    environment: *app-environment
+    command: ["node", "dist/worker.cjs"]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "node", "-e", "const p=new (require('@prisma/client').PrismaClient)();p.workerHeartbeat.findUnique({where:{id:'daily-planner'}}).then(h=>{if(!h||Date.now()-h.updatedAt.getTime()>600000)process.exitCode=1}).catch(()=>process.exitCode=1).finally(()=>p.$$disconnect())"]
+      interval: 60s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    restart: unless-stopped
+    networks: [backend]
+
+  caddy:
+    profiles: ["https"]
+    image: caddy:2.10.2-alpine
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,nosuid,nodev,noexec,size=64m"]
+    logging: *default-logging
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      afaire-web: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [edge]
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+networks:
+  backend:
+    internal: true
+  edge:

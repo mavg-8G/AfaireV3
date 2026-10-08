@@ -1,0 +1,1 @@
+export default function Loading() { return <div role="status" className="space-y-5"><p className="text-sm text-muted">Abriendo tu agenda…</p><div className="h-32 animate-pulse rounded-3xl bg-line/40" /><div className="h-60 animate-pulse rounded-3xl bg-line/25" /></div>; }

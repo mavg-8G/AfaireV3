@@ -1,0 +1,91 @@
+name: Verify and publish Docker images
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.4-bookworm
+        env:
+          POSTGRES_USER: afaire
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_DB: afaire
+        ports: [5432:5432]
+        options: --health-cmd "pg_isready -U afaire" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://afaire:ci-test-password@127.0.0.1:5432/afaire
+      AUTH_SECRET: 961ffb31c00b42f2b69840170afe54046943db8ad46902671abe8ea9df2fa131
+      NEXTAUTH_URL: http://localhost:3000
+      REGISTRATION_MODE: open
+      TRUST_PROXY: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate && npm run db:migrate
+      - run: npm run typecheck && npm run lint && npm test && npm run test:integration
+      - run: npm run build && npm run worker:build
+      - name: Verify production HTTP and shell syntax
+        run: |
+          for script in scripts/*.sh; do sh -n "$script"; done
+          sh tests/update-script.test.sh
+          npm start > /tmp/afaire.log 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:web
+  publish:
+    needs: checks
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish web and worker
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          target: runtime
+          push: true
+          tags: ghcr.io/mavg-8g/afairev3:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/mavg-8G/AfaireV3
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+      - name: Publish migrations
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          target: migrate
+          push: true
+          tags: ghcr.io/mavg-8g/afairev3-migrate:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/mavg-8G/AfaireV3
+          cache-from: type=gha
+          provenance: true
+          sbom: true
