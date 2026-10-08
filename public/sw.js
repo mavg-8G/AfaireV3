@@ -1,5 +1,5 @@
 /* Public shell plus one authenticated, expiring, read-only snapshot. Never cache HTML or mutations. */
-const CACHE_NAME = "afaire-public-v2";
+const CACHE_NAME = "afaire-public-v3";
 const DAY_CACHE = "afaire-day-v1";
 let snapshotGeneration = 0;
 const PUBLIC_ASSETS = ["/offline.html", "/offline.css", "/pwa/icon-192.png", "/pwa/icon-512.png", "/pwa/maskable-512.png", "/pwa/apple-touch-icon.png"];

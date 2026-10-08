@@ -1,4 +1,6 @@
-# Afaire
+# Afaire 2
+
+Versión 2.0.0. Apariencia clara, nocturna o automática según el sistema, con selección guardada por navegador. El selector Tema está disponible en la cabecera y al iniciar sesión. La vista sin conexión sigue el tema del sistema.
 
 Planificador diario para varias personas. Cada cuenta tiene su agenda privada: citas fijas, hábitos, tareas pendientes y planificación automática en los huecos disponibles.
 

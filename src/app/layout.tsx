@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
+import { cookies } from "next/headers";
+import { ThemeProvider, type Theme } from "@/components/ThemeProvider";
 import { PwaProvider } from "@/components/PwaProvider";
 import "./globals.css";
 export const metadata: Metadata = {
@@ -13,5 +15,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#3f6b58", width: "device-width", initialScale: 1 };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection(); // Every HTML document receives its own CSP nonce.
-  return <html lang="es" className="h-full antialiased"><body className="flex min-h-full flex-col text-ink"><PwaProvider>{children}</PwaProvider></body></html>;
+  const preference = (await cookies()).get("afaire-theme")?.value;
+  const theme: Theme = preference === "dark" || preference === "light" ? preference : "system";
+  return <html lang="es" data-theme={theme} className="h-full antialiased"><body className="flex min-h-full flex-col text-ink"><ThemeProvider initialTheme={theme}><PwaProvider>{children}</PwaProvider></ThemeProvider></body></html>;
 }

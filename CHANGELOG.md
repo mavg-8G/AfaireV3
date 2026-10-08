@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## 2.0.0 · 2026-10-08
+
+- Modo nocturno para agenda, ajustes, formularios e inicio de sesión. Selector Claro/Nocturno/Sistema con preferencia persistida por navegador y aplicada desde la respuesta inicial, sin destello claro.
+- Colores adaptados para fondos, texto, campos, botones y avisos. La vista offline sigue la apariencia del sistema; caché pública renovada para descargar sus estilos.
+- Versión del paquete y lockfile actualizada a 2.0.0, visible como Afaire v2 en la aplicación.
+
 ## 2026-10-08 · Agenda recurrente, avisos y revisión semanal
 
 - Citas con repetición diaria, semanal por días o mensual, con fecha final hasta 366 días desde el inicio. Edición de una ocurrencia o de esa y las siguientes, conservando el historial y rechazando conflictos de forma atómica.

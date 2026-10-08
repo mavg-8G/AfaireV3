@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { signup } from "@/app/actions/auth";
 import type { AuthFormState } from "@/lib/definitions";
+import { ThemePicker } from "./ThemeProvider";
 
 export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "register"; inviteOnly?: boolean }) {
   const [state, setState] = useState<AuthFormState>({}); const [pending, setPending] = useState(false);
@@ -19,6 +20,7 @@ export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "regist
       </div>
     </section>
     <section className="mx-auto w-full max-w-md rounded-3xl border border-line bg-card p-7 shadow-[0_24px_80px_-48px_rgba(31,26,22,.4)] sm:p-10">
+      <div className="mb-5 flex justify-end"><ThemePicker /></div>
       <p className="display text-2xl text-sage lg:hidden">Afaire.</p>
       <p className="mt-2 text-xs uppercase tracking-widest text-sage">{register ? "Empieza aquí" : "Bienvenido de nuevo"}</p>
       <h2 className="mt-3 text-4xl">{register ? "Crea tu cuenta" : "Tu agenda te espera"}</h2>
