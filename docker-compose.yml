@@ -83,7 +83,7 @@ services:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
     healthcheck:
-      test: ["CMD", "node", "-e", "const p=new (require('@prisma/client').PrismaClient)();p.workerHeartbeat.findUnique({where:{id:'daily-planner'}}).then(h=>{if(!h||Date.now()-h.updatedAt.getTime()>600000)process.exitCode=1}).catch(()=>process.exitCode=1).finally(()=>p.$$disconnect())"]
+      test: ["CMD", "node", "-e", "const p=new (require('@prisma/client').PrismaClient)();p.workerHeartbeat.findUnique({where:{id:'daily-planner'}}).then(h=>{if(!h||Date.now()-h.updatedAt.getTime()>300000)process.exitCode=1}).catch(()=>process.exitCode=1).finally(()=>p.$$disconnect())"]
       interval: 60s
       timeout: 10s
       start_period: 60s

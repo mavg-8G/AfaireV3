@@ -34,6 +34,13 @@ export function durationSuggestion(estimate: number, samples: number[]) {
   return { estimated: estimate, suggested, median, samples: valid.length };
 }
 
+export function durationEvidence(samples: number[]) {
+  const valid = samples.filter(n => Number.isFinite(n) && n >= 1 && n <= 480).slice(-10).sort((a,b) => a-b);
+  if (valid.length < 3) return undefined;
+  const middle = Math.floor(valid.length / 2);
+  return { samples: valid.length, median: valid.length % 2 ? valid[middle] : (valid[middle - 1] + valid[middle]) / 2 };
+}
+
 export function weeklyHabitStats(start: string, end: string, created: string, completed: Set<string>, today: string, target: number, weekStartsOn = 1) {
   const monday = (day:string) => startOfLocalWeek(day, weekStartsOn);
   const count = (week:string) => [...completed].filter(day => day >= week && day <= addLocalDays(week,6) && day >= created).length;

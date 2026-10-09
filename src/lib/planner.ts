@@ -5,7 +5,8 @@ import { categoryTargets, categoryFillItems } from "./category-budgets";
 import { materializeTaskSeries } from "./task-series";
 import { weeklyHabitDue } from "./weekly-habits";
 import { Prisma, type Event } from "@prisma/client";
-import { adjustedDuration, learnedFocus } from "./insights";
+import { adjustedDuration, durationEvidence, learnedFocus } from "./insights";
+import { validDurationMeasurements, taskMeasurements } from "./duration-learning";
 import { prisma } from "./prisma";
 import { DateSchema } from "./definitions";
 import { withUserLock, DomainError } from "./transaction";
@@ -20,6 +21,7 @@ export async function generateDay(userId: string, requestedDay?: string, options
   return withUserLock(userId, tx => generateDayInTransaction(tx, userId, requestedDay, options));
 }
 export async function generateDayInTransaction(tx: Prisma.TransactionClient, userId: string, requestedDay?: string, options: PlanOptions = {}) {
+  const generationStarted = performance.now();
   const now = options.now ?? new Date();
     const user = await tx.user.findUniqueOrThrow({ where: { id: userId }, include: { availability: true } });
     const today = ymdInZone(now, user.timezone);
@@ -71,7 +73,7 @@ export async function generateDayInTransaction(tx: Prisma.TransactionClient, use
       await tx.task.updateMany({ where: { userId, archived: false, status: "SCHEDULED", id: { in: replaceable.flatMap(event => event.taskId ? [event.taskId] : []) } }, data: { status: "INBOX" } });
     }
     await materializeTaskSeries(tx, userId, day, addLocalDays(day, 90));
-    const history = user.adaptiveDurations ? await tx.event.findMany({ where: { userId, status: "DONE", chunkIndex: null, actualMinutes: { not: null } }, orderBy: { startsAt: "asc" }, include: { task: true } }) : [];
+    const history = user.adaptiveDurations ? validDurationMeasurements(await tx.event.findMany({ where: { userId, status: "DONE", chunkIndex: null, actualMinutes: { not: null } }, orderBy: [{ startsAt: "asc" }, { id: "asc" }], include: { task: true } })) : [];
     const focus = signal.preferredWindow ?? (user.focusWindow === "LEARNED" ? learnedFocus(await tx.usageSample.findMany({ where: { userId, timezone: user.timezone, observedAt: { gte: new Date(now.getTime() - 28 * 86400_000) } } }), "MORNING") : user.focusWindow);
     const habits = await tx.habit.findMany({ where: { userId, active: true, archived: false, OR: [{ frequencyMode: "DAYS", daysOfWeek: { has: weekday } }, { frequencyMode: "WEEKLY" }] }, orderBy: { id: "asc" } });
     const items: Schedulable[] = [];
@@ -85,10 +87,14 @@ export async function generateDayInTransaction(tx: Prisma.TransactionClient, use
         include: { event: true },
       });
       if (occurrence.status !== "PENDING" || occurrence.event) continue;
-      items.push({ ...habitToSchedulable(habit), explicitEstimate: feedback.some(row => row.reason === "ESTIMATE" && row.habitId === habit.id), originalMinutes: habit.durationMinutes, durationMinutes: feedbackDuration(adjustedDuration(habit.durationMinutes, history.filter(e => e.habitId === habit.id).map(e => e.actualMinutes!)), feedback, undefined, habit.id, habit.durationMinutes), occurrenceId: occurrence.id, preferred: preferredBounds(day, user.timezone, habit.preferredWindow === "ANY" ? signal.preferredWindow ?? "ANY" : habit.preferredWindow) });
+      const samples = history.filter(e => e.habitId === habit.id).map(e => e.actualMinutes!);
+      items.push({ ...habitToSchedulable(habit), durationEvidence: durationEvidence(samples), explicitEstimate: feedback.some(row => row.reason === "ESTIMATE" && row.habitId === habit.id), originalMinutes: habit.durationMinutes, durationMinutes: feedbackDuration(adjustedDuration(habit.durationMinutes, samples), feedback, undefined, habit.id, habit.durationMinutes), occurrenceId: occurrence.id, preferred: preferredBounds(day, user.timezone, habit.preferredWindow === "ANY" ? signal.preferredWindow ?? "ANY" : habit.preferredWindow) });
     }
     const tasks = await tx.task.findMany({ where: { userId, status: { in: ["INBOX", "SCHEDULED"] }, archived: false, AND: [{ OR: [{ availableFrom: null }, { availableFrom: { lte: date } }] }, { OR: [{ splittable: true }, { events: { none: { status: { in: ["PENDING", "IN_PROGRESS"] } } } }] }] }, include: { events: { where: { status: { in: ["DONE", "PENDING", "IN_PROGRESS"] } } } }, orderBy: { id: "asc" } });
-    for (const task of tasks) items.push({ ...taskToSchedulable(task), explicitEstimate: feedback.some(row => row.reason === "ESTIMATE" && row.taskId === task.id), originalMinutes: task.durationMinutes, focusReason: signal.preferredWindow ? "La franja se eligió teniendo en cuenta tu feedback reciente sobre la hora." : task.energy === "DEEP" && task.preferredWindow === "ANY" ? `Tarea profunda situada en tu franja de foco${user.focusWindow === "LEARNED" ? " estimada a partir del uso reciente" : " elegida en Ajustes"}.` : undefined, durationMinutes: feedbackDuration(adjustedDuration(task.durationMinutes, history.filter(e => e.title.trim().toLocaleLowerCase() === task.title.trim().toLocaleLowerCase()).map(e => e.actualMinutes!)), feedback, task.id, undefined, task.durationMinutes), preferred: preferredBounds(day, user.timezone, task.preferredWindow === "ANY" ? (signal.preferredWindow ?? (task.energy === "DEEP" ? focus : "ANY")) : task.preferredWindow) });
+    for (const task of tasks) {
+      const samples = taskMeasurements(task, history);
+      items.push({ ...taskToSchedulable(task), durationEvidence: durationEvidence(samples), explicitEstimate: feedback.some(row => row.reason === "ESTIMATE" && row.taskId === task.id), originalMinutes: task.durationMinutes, focusReason: signal.preferredWindow ? "La franja se eligió teniendo en cuenta tu feedback reciente sobre la hora." : task.energy === "DEEP" && task.preferredWindow === "ANY" ? `Tarea profunda situada en tu franja de foco${user.focusWindow === "LEARNED" ? " estimada a partir del uso reciente" : " elegida en Ajustes"}.` : undefined, durationMinutes: feedbackDuration(adjustedDuration(task.durationMinutes, samples), feedback, task.id, undefined, task.durationMinutes), preferred: preferredBounds(day, user.timezone, task.preferredWindow === "ANY" ? (signal.preferredWindow ?? (task.energy === "DEEP" ? focus : "ANY")) : task.preferredWindow) });
+    }
     // Completed and protected fragments retain their credit when the rest is replanned.
     for (const task of tasks) {
       const item = items.find(item => item.taskId === task.id)!;
@@ -96,6 +102,7 @@ export async function generateDayInTransaction(tx: Prisma.TransactionClient, use
         const reserved = task.events.reduce((n,event) => n + (event.estimatedMinutes ?? (event.endsAt.getTime() - event.startsAt.getTime()) / 60000), 0);
         item.durationMinutes = Math.max(0, task.durationMinutes - reserved);
         item.originalMinutes = item.durationMinutes;
+        item.durationEvidence = undefined;
       }
     }
     const categoryGoals = await categoryTargets(tx, userId, day, now, protectedEvents, signal.extraSlack);
@@ -143,10 +150,12 @@ export async function generateDayInTransaction(tx: Prisma.TransactionClient, use
       const actions = code === "DEADLINE_PASSED" && item.taskId ? [{ type: "MOVE_DEADLINE" as const, date: addLocalDays(day, 1) }] : ["DAY_MODE", "PAUSED", "DAY_ENDED"].includes(code) ? [] : explainUnscheduled(item, day, remainingWindows, protectedEvents, createdEvents, user.bufferMinutes, policy);
       return { key: item.key, title: item.title, code, reason: expiredKeys.has(item.key) ? "La ventana de esta repetición ya venció. Mueve su fecha límite para recuperarla." : descriptions[code], required: Boolean(item.required), actions };
     });
+    const generationMs = performance.now() - generationStarted;
+    const unscheduledTaskCount = details.filter(item => item.key.startsWith("task:") && ["NO_CONTIGUOUS_SLOT", "CAPACITY_EXCEEDED", "MIN_CHUNK_UNAVAILABLE", "DAY_ENDED"].includes(item.code ?? "")).length;
     await tx.dayPlan.upsert({
       where: { userId_date: { userId, date } },
-      create: { userId, date, generatedAt: now, skipped: details.map(item => item.title), details },
-      update: { generatedAt: now, version: { increment: 1 }, skipped: details.map(item => item.title), details },
+      create: { userId, date, generatedAt: now, skipped: details.map(item => item.title), details, generationCount: 1, generationTotalMs: generationMs, unscheduledTaskCount },
+      update: { generatedAt: now, version: { increment: 1 }, skipped: details.map(item => item.title), details, generationCount: { increment: 1 }, generationTotalMs: { increment: generationMs }, unscheduledTaskCount },
     });
     await saveRevision(tx, userId, day, before, options.dayMode ? `MODE_${options.dayMode}` : options.recordWorkerRun ? "WORKER" : "PLAN", now);
     if (options.recordWorkerRun) await tx.workerRun.create({ data: { userId, date, status: "SUCCESS", message: `${result.placements.length} bloques; ${details.length} sin espacio`, attemptedAt: now } });
@@ -181,6 +190,7 @@ export async function runDuePlans(now = new Date(), options: { userIds?: string[
   await prisma.workerRun.deleteMany({ where: { attemptedAt: { lt: new Date(now.getTime() - 30 * 86400_000) }, ...(options.userIds ? { userId: { in: options.userIds } } : {}) } });
   await prisma.usageSample.deleteMany({ where: { observedAt: { lt: new Date(now.getTime() - 28 * 86400_000) }, ...(options.userIds ? { userId: { in: options.userIds } } : {}) } });
   if (!options.userIds) {
+    await prisma.offlineMutation.deleteMany({ where: { appliedAt: { lt: new Date(now.getTime() - 8 * 86400_000) } } });
     await prisma.accessAttempt.deleteMany({ where: { expiresAt: { lt: now } } });
     await prisma.workerHeartbeat.upsert({ where: { id: "daily-planner" }, create: { id: "daily-planner", updatedAt: now }, update: { updatedAt: now } });
   }

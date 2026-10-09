@@ -1,6 +1,6 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { ymdInZone, addLocalDays, dateOnly } from "../src/lib/time";
 import { PrismaClient } from "@prisma/client";
@@ -79,15 +79,31 @@ try {
     assert.ok(bodyB.includes("&lt;img")); assert.ok(!bodyB.includes(titleB));
   });
   check("Bandeja muestra energía y estimación sugerida con evidencia", () => { assert.match(bodyA, /Ligera/); assert.match(bodyA, /Duración sugerida/); assert.match(bodyA, /Aplicar estimación sugerida/); assert.match(bodyA, /Tareas recurrentes flexibles/); assert.match(bodyA, /Plantillas de tareas/); assert.match(bodyA, /Ver cómo cambiaría el plan/); assert.match(bodyA, /name="categoryId"/); });
+  check("Aprendizaje muestra mediciones, mediana y vinculación explícita", () => { assert.match(bodyA, /Basado en/); assert.match(bodyA, /mediciones, mediana/); assert.match(bodyA, /name="learningMatch"/); assert.match(bodyA, /Plantilla de aprendizaje/); assert.match(bodyA, /Misma categoría/); });
   const offlineAnonymous = await fetch(new URL("/api/offline-today", base));
   check("Copia offline requiere sesión", () => assert.equal(offlineAnonymous.status, 401));
   const offlineA = await fetch(new URL("/api/offline-today", base), { headers: { cookie: cookieHeader(authA.jar) } });
-  const snapshotA = await offlineA.json() as { owner: string; expiresAt: string; events: { title: string }[] };
+  const snapshotA = await offlineA.json() as { owner: string; deviceSessionId: string; sessionVersion: number; timezone: string; expiresAt: string; events: { id: string; title: string; updatedAt: string; startTime: string; endDate: string }[] };
   check("Copia del día privada, con caducidad y aislada por cuenta", () => { assert.equal(offlineA.status, 200); assert.match(offlineA.headers.get("cache-control") ?? "", /no-store/); assert.equal(snapshotA.owner, ids[0]); assert.ok(Date.parse(snapshotA.expiresAt) > Date.now()); assert.ok(snapshotA.events.some(e => e.title === titleA)); assert.ok(!snapshotA.events.some(e => e.title === titleB)); });
+  check("Copia offline incluye sesión y versiones para editar", () => { assert.ok(snapshotA.deviceSessionId); assert.equal(snapshotA.sessionVersion, 0); for (const event of snapshotA.events) { assert.ok(event.id); assert.ok(Number.isFinite(Date.parse(event.updatedAt))); assert.match(event.startTime, /^\d{2}:\d{2}$/); assert.match(event.endDate, /^\d{4}-\d{2}-\d{2}$/); } });
+  const offlineChange = { id: randomUUID(), owner: snapshotA.owner, deviceSessionId: snapshotA.deviceSessionId, sessionVersion: snapshotA.sessionVersion, timezone: snapshotA.timezone, eventId: snapshotA.events.find(e => e.title === titleA)!.id, expectedUpdatedAt: snapshotA.events.find(e => e.title === titleA)!.updatedAt, recordedAt: new Date().toISOString(), kind: "STATUS", status: "IN_PROGRESS" };
+  const sendOffline = (change: unknown, cookie?: string) => fetch(new URL("/api/offline-changes", base), { method: "POST", headers: { origin: base.origin, "Content-Type": "application/json", ...(cookie ? { cookie } : {}) }, body: JSON.stringify(change) });
+  const anonymousOfflineWrite = await sendOffline(offlineChange);
+  check("Escritura offline requiere sesión", () => assert.equal(anonymousOfflineWrite.status, 401));
+  const appliedOffline = await sendOffline(offlineChange, cookieHeader(authA.jar)); const appliedResult = await appliedOffline.json() as { ok: boolean; duplicate: boolean; updatedAt: string };
+  check("Cambio offline autenticado aplicado con versión nueva", () => { assert.equal(appliedOffline.status, 200); assert.equal(appliedResult.ok, true); assert.equal(appliedResult.duplicate, false); assert.match(appliedOffline.headers.get("cache-control") ?? "", /no-store/); assert.notEqual(appliedResult.updatedAt, offlineChange.expectedUpdatedAt); });
+  const repeatedOffline = await sendOffline(offlineChange, cookieHeader(authA.jar));
+  check("Reintento HTTP offline es idempotente", () => assert.equal(repeatedOffline.status, 200));
+  assert.equal((await repeatedOffline.json()).duplicate, true);
+  const staleOffline = await sendOffline({ ...offlineChange, id: randomUUID(), status: "DONE" }, cookieHeader(authA.jar));
+  check("Versión offline desactualizada produce conflicto", () => assert.equal(staleOffline.status, 409));
+  const otherOwnerOffline = await sendOffline(offlineChange, cookieHeader(authB.jar));
+  check("Otro propietario no puede aplicar la cola", () => assert.equal(otherOwnerOffline.status, 403));
   for (const path of ["/", "/habits", "/review", "/settings", "/week", "/check-in"]) {
     const page = await fetch(new URL(path, base), { headers: { cookie: cookieHeader(authA.jar) } });
     check("Página autenticada disponible: " + path, () => assert.equal(page.status, 200));
     const content = await page.text();
+    if (path === "/settings") check("Métricas de planificación y push visibles", () => { assert.match(content, /Métricas de operación/); assert.match(content, /Días con tareas sin espacio/); assert.match(content, /Tiempo medio de generación/); assert.match(content, /Tasa de fallos push/); });
     if (path === "/settings") check("Silencio y observabilidad push visibles", () => { assert.match(content, /Horas de silencio/); assert.match(content, /name="quietStart"/); assert.match(content, /Proveedor push: HTTP 503/); assert.match(content, /Vacaciones y días especiales/); assert.match(content, /name="slackPercent"/); assert.match(content, /Plantilla de semana/); });
     if (path === "/settings") check("Header compacto y activación push coherente con el servidor", () => {
       const header = /<header[^>]*>([\s\S]*?)<\/header>/.exec(content)?.[1] ?? "";

@@ -11,7 +11,7 @@ export async function runPushNotifications(now = new Date(), options: { send?: P
   const users = await prisma.user.findMany({ where: { ...(options.userIds ? { id: { in: options.userIds } } : {}), pushSubscriptions: { some: {} }, notificationSettings: { isNot: null } }, include: { notificationSettings: true, pushSubscriptions: true } });
   let sent = 0, failed = 0, expired = 0;
   for (const user of users) {
-    let userSent = 0, userFailed = 0, userExpired = 0;
+    let userSent = 0, userFailed = 0, userExpired = 0, transportFailed = 0, transportExpired = 0;
     const messages = new Set<string>();
     try {
       const day = ymdInZone(now, user.timezone), bounds = calendarDayBounds(day, user.timezone);
@@ -67,15 +67,17 @@ export async function runPushNotifications(now = new Date(), options: { send?: P
               const status = typeof error === "object" && error && "statusCode" in error ? Number(error.statusCode) : 0;
               if ([404, 410].includes(status)) {
                 await tx.pushSubscription.delete({ where: { id: subscription.id } });
-                return { status: "expired", message: `Dispositivo caducado retirado: HTTP ${status}.` };
+                return { status: "expired", transportFailure: true, message: `Dispositivo caducado retirado: HTTP ${status}.` };
               }
               const message = status ? `Proveedor push: HTTP ${status}` : "No se pudo conectar con el proveedor push.";
               await tx.pushDelivery.update({ where: { id: delivery.id }, data: { error: message } });
-              return { status: "failed", message };
+              return { status: "failed", transportFailure: true, message };
             }
           });
           if (outcome.status === "sent") userSent++;
           if (outcome.status === "failed") userFailed++;
+          if (outcome.transportFailure && outcome.status === "failed") transportFailed++;
+          if (outcome.transportFailure && outcome.status === "expired") transportExpired++;
           if (outcome.message) messages.add(outcome.message);
           if (outcome.status === "expired") { userExpired++; break; }
         }
@@ -88,6 +90,7 @@ export async function runPushNotifications(now = new Date(), options: { send?: P
     if (userSent || userFailed || userExpired) await prisma.workerRun.create({ data: {
       userId: user.id, kind: "PUSH", date: dateOnly(ymdInZone(now, user.timezone)), attemptedAt: now,
       status: userFailed ? "FAILED" : userExpired ? "EXPIRED" : "SUCCESS",
+      pushSent: userSent, pushFailed: transportFailed, pushExpired: transportExpired,
       message: `${userSent} enviados; ${userFailed} fallidos; ${userExpired} dispositivos retirados. ${[...messages].join(" ")}`,
     } });
     sent += userSent; failed += userFailed; expired += userExpired;

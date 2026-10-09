@@ -52,6 +52,7 @@ model User {
   deviceSessions DeviceSession[]
   locale String @default("es")
   hourFormat String @default("24")
+  offlineMutations OfflineMutation[]
   weekStartsOn Int @default(1)
 }
 
@@ -151,6 +152,8 @@ model HabitOccurrence {
 }
 
 model Task {
+  learningMatch String @default("TITLE")
+  learningKey String?
   splittable Boolean @default(false)
   minChunk Int @default(30)
   categoryId String?
@@ -182,6 +185,9 @@ model Task {
 }
 
 model DayPlan {
+  generationCount Int @default(0)
+  generationTotalMs Float @default(0)
+  unscheduledTaskCount Int @default(0)
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -197,6 +203,18 @@ model AccessAttempt {
   key       String   @id
   count     Int      @default(1)
   expiresAt DateTime @db.Timestamptz(3)
+}
+
+model OfflineMutation {
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id String
+  eventId String
+  payloadHash String
+  eventUpdatedAt DateTime @db.Timestamptz(3)
+  appliedAt DateTime @default(now()) @db.Timestamptz(3)
+  @@id([userId, id])
+  @@index([appliedAt])
 }
 
 model WorkerHeartbeat {
@@ -264,6 +282,9 @@ model PushDelivery {
 }
 
 model WorkerRun {
+  pushSent Int @default(0)
+  pushFailed Int @default(0)
+  pushExpired Int @default(0)
   kind String @default("PLAN")
   retryAt DateTime? @db.Timestamptz(3)
   id String @id @default(cuid())

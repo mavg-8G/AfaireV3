@@ -1,14 +1,16 @@
 "use client";
 import { useI18n } from "@/components/LocaleProvider";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { CategoryBudget, Task } from "@prisma/client";
 import { createTask, updateTask } from "@/app/actions/tasks";
 import { previewTask, applyTaskPreview } from "@/app/actions/transparency";
 import type { TaskPreview } from "@/lib/task-preview";
 import { displayTime } from "@/lib/locale";
 import { WINDOW_LABELS } from "@/lib/definitions";
-export function TaskForm({ task, categories = [], today, timezone = "UTC" }: { task?: Task; categories?: Pick<CategoryBudget,"id"|"name"|"active">[]; today?: string; timezone?: string }) {
+export function TaskForm({ task, categories = [], learningTemplates = [], today, timezone = "UTC" }: { task?: Task; categories?: Pick<CategoryBudget,"id"|"name"|"active">[]; learningTemplates?: string[]; today?: string; timezone?: string }) {
   const { t, preferences } = useI18n(); const formRef=useRef<HTMLFormElement>(null);
+  const [learningMatch, setLearningMatch] = useState(task?.learningMatch ?? "TITLE");
+  const templateListId = useId();
   const [error,setError]=useState(""),[pending,setPending]=useState(false),[message,setMessage]=useState(""),[preview,setPreview]=useState<TaskPreview|null>(null),[day,setDay]=useState(today??"");
   async function simulate() {
     if(!formRef.current?.reportValidity())return;
@@ -32,7 +34,10 @@ export function TaskForm({ task, categories = [], today, timezone = "UTC" }: { t
       <label className="text-sm">{t("Energía")}<select name="energy" defaultValue={task?.energy??"LIGHT"} className="field"><option value="LIGHT">{t("Ligera")}</option><option value="DEEP">{t("Profunda · priorizar mi franja de foco")}</option></select></label>
       <label className="flex items-start gap-2 text-sm"><input name="splittable" type="checkbox" defaultChecked={task?.splittable ?? false} /><span>{t("Permitir dividir en varios bloques")}<span className="mt-1 block text-xs text-muted">{t("Desactivado por defecto para conservar el foco en tareas profundas. Solo se divide si no hay un hueco continuo.")}</span></span></label>
       <label className="text-sm">{t("Fragmento mínimo · minutos")}<input name="minChunk" type="number" required min={5} max={480} defaultValue={task?.minChunk ?? 30} className="field" /></label>
-      <label className="text-sm">{t("Categoría")}<select name="categoryId" defaultValue={task?.categoryId??""} className="field"><option value="">{t("Sin categoría")}</option>{categories.filter(c=>c.active || c.id===task?.categoryId).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+      <label className="text-sm">{t("Categoría")}<select name="categoryId" required={learningMatch === "CATEGORY"} defaultValue={task?.categoryId??""} className="field"><option value="">{t("Sin categoría")}</option>{categories.filter(c=>c.active || c.id===task?.categoryId).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+      <label className="text-sm">{t("Aprender la duración por")}<select name="learningMatch" value={learningMatch} onChange={event => setLearningMatch(event.target.value)} className="field"><option value="TITLE">{t("Mismo título")}</option><option value="TEMPLATE">{t("Plantilla de aprendizaje")}</option><option value="CATEGORY">{t("Misma categoría")}</option></select></label>
+      {learningMatch === "TEMPLATE" && <label className="text-sm">{t("Plantilla de aprendizaje")}<input name="learningKey" required maxLength={80} list={templateListId} defaultValue={task?.learningKey ?? ""} placeholder={t("Ej. informe semanal")} className="field" /><datalist id={templateListId}>{learningTemplates.map(name => <option key={name} value={name} />)}</datalist><span className="mt-1 block text-xs text-muted">{t("Usa el mismo nombre de plantilla en tareas repetidas, aunque sus títulos cambien.")}</span></label>}
+      <p className="text-xs text-muted">{t("El aprendizaje ignora fragmentos y mediciones menores al 10 % de lo estimado. Requiere al menos 3 mediciones y limita el ajuste al 25 %.")}</p>
       <label className="text-sm">{t("Fecha límite")}{task?.seriesId?t(" · fin de la ventana"):t(" · opcional")}<input name="dueDate" type="date" required={Boolean(task?.seriesId)} min={task?.availableFrom?.toISOString().slice(0,10)} defaultValue={task?.dueDate?.toISOString().slice(0,10)} className="field" /></label>
       {!task&&today&&<><label className="text-sm">{t("¿Y si la añado a este día?")}<input aria-label={t("Día de la vista previa")} type="date" required min={today} value={day} onChange={e=>setDay(e.target.value)} className="field" /></label><button type="button" onClick={simulate} className="rounded-full border border-sage px-4 py-2 text-sm text-sage">{pending?t("Calculando…"):t("Ver cómo cambiaría el plan")}</button></>}
       <button className="rounded-full bg-sage py-2.5 text-white">{pending?t("Guardando…"):task?t("Guardar cambios"):t("Guardar en la bandeja")}</button>

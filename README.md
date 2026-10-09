@@ -21,7 +21,7 @@ Las actividades sin espacio guardan un código de motivo en `DayPlan.details`, c
 - Agendar citas, incluyendo las que terminan el día siguiente, con repetición diaria, semanal por días o mensual; editar solo una o esa y las siguientes.
 - Reservar minutos de traslado antes de citas con ubicación.
 - Recibir Web Push antes de un bloque, con el resumen del día y las tareas que vencen mañana.
-- Consultar la última copia de hoy sin conexión, en lectura.
+- Consultar y editar los bloques de la última copia de hoy sin conexión, con una cola persistente de cambios.
 - Registrar tiempos reales, ver rachas y cumplimiento de hábitos y cerrar la semana en Revisión.
 - Marcar tareas profundas o ligeras y ajustar duraciones a partir del historial medido.
 - Guardar tareas con fecha límite y editarlas antes de programarlas.
@@ -110,6 +110,16 @@ npm run admin:build
 
 Las pruebas de integración necesitan la base configurada y migrada. Crean cuentas con emails bajo `test.invalid` y eliminan únicamente sus propios datos al terminar. Incluyen generación repetida y concurrente, conservación de bloques, tareas futuras, arrastre, aislamiento de cuentas, restricciones PostgreSQL y worker.
 
+El aprendizaje de duración muestra el número de mediciones válidas y su mediana en las sugerencias y en la explicación de los bloques automáticos. En el formulario de tarea puedes elegir el mismo título, una plantilla de aprendizaje (usa el mismo nombre aunque cambie el título) o la misma categoría. Solo se usan bloques completos, con duración real entre 1 y 480 minutos y al menos el 10 % de la estimación de ese bloque; si no había estimación guardada, se compara con la duración programada. Se conservan las últimas diez mediciones válidas, se requieren tres y el ajuste se limita al 25 %.
+
+Cada ciclo del worker toma `pg_try_advisory_lock` en una conexión PostgreSQL dedicada, durante planificación y push. Una segunda instancia omite el ciclo si no obtiene el lock. El cierre de la conexión libera el lock incluso si el ciclo falla; si se pierde la conexión durante el ciclo, el proceso termina para evitar seguir trabajando sin bloqueo. Requiere una conexión directa a PostgreSQL o un pool en modo sesión, no un pool en modo transacción.
+
+En Ajustes aparecen el porcentaje de días planificados con tareas sin espacio (último plan por día), el tiempo medio de generación y la tasa de fallos push por intento, incluidos reintentos y dispositivos caducados. El período es de 30 días y empieza a acumular datos con esta migración; los fallos de procesamiento sin un intento de transporte no inflan la tasa push. El tiempo de generación mide el cálculo y las consultas hasta persistir el plan, sin incluir la espera inicial del lock de usuario ni el guardado posterior del historial.
+
+La falta de heartbeat de `daily-planner` durante más de cinco minutos muestra una alerta en Ajustes. `GET /api/health/worker` devuelve 503 cuando falta la señal, está vencida o no hay conexión con la base, y 200 cuando está vigente. Se puede conectar este endpoint a tu monitor HTTP para recibir alertas externas. El healthcheck del contenedor usa el mismo umbral; `/api/health` sigue comprobando la disponibilidad de la web y la base.
+
+Las pruebas de propiedades usan `fast-check` con semilla reproducible y 500 casos por garantía: sin solapamientos, sin bloques nuevos en el pasado, resultado determinista y conservación de las entradas fijadas. Las pruebas de integración también verifican estas garantías en la agenda persistida y la exclusión entre ciclos del worker. Los casos DST cubren Nueva York, Madrid, Lord Howe (cambio de media hora) y Santiago (cambio a medianoche), incluyendo citas nocturnas y repeticiones.
+
 El build no necesita una base accesible: las páginas privadas se renderizan al recibir la petición. Los tests de integración y los flujos web sí necesitan PostgreSQL.
 
 ## VPS y actualizaciones desde GitHub
@@ -141,7 +151,11 @@ docker compose logs --tail=100 afaire-web worker
 
 ## Instalación como webapp y seguridad
 
-La PWA se instala desde las opciones del navegador, sin un botón de instalación dentro de Afaire. Incluye manifest, iconos y pantalla genérica sin conexión y una copia privada de solo lectura del día actual. La copia se actualiza al visitar Hoy y cada minuto mientras está abierta; contiene títulos, horarios, estados y ubicaciones, indica cuándo se guardó, caduca al terminar el día en la zona del usuario y se borra al salir, visitar el acceso o detectar una sesión inválida. Solo se guarda en ese dispositivo. No se cachean páginas privadas, sesiones ni mutaciones; otras fechas y cualquier cambio requieren conexión.
+La PWA se instala desde las opciones del navegador, sin un botón de instalación dentro de Afaire. Incluye manifest, iconos, pantalla genérica sin conexión y una copia privada del día actual. La copia se actualiza al visitar Hoy y cada minuto mientras está abierta; indica cuándo se guardó y caduca al terminar el día en la zona del usuario. Desde «Abrir agenda guardada y cambios pendientes» puedes cambiar estados y editar título, horario, ubicación, traslado y notas de bloques existentes. Cada edición afecta solo ese bloque y fija su horario; crear tareas, citas o modificar series requiere conexión.
+
+Los cambios se guardan en una cola local persistente (hasta 200), sobreviven a las recargas y se envían en orden al recuperar la conexión, abrir la agenda o pulsar «Sincronizar ahora». Los reintentos usan identificadores idempotentes para evitar aplicar dos veces una operación. El servidor comprueba la sesión, la versión del bloque y los solapamientos; un conflicto conserva el cambio pendiente y muestra la versión actual para que puedas descartar los cambios de ese bloque y revisarlo. Los demás bloques siguen sincronizándose. Completar un bloque usa la hora registrada en el dispositivo para medir su duración.
+
+La copia y la cola solo se guardan en ese dispositivo. La caducidad diaria elimina la copia, pero conserva los cambios pendientes; el servidor admite cambios registrados hasta siete días antes. Salir, visitar el acceso, cambiar de sesión o detectar una sesión inválida borra ambas. No se cachean páginas privadas ni credenciales; solo esta cola explícita permite escrituras sin conexión.
 
 Consulta [SECURITY.md](SECURITY.md) para cookies, CSP, protección de mutaciones, límites de acceso, secretos y seguridad Docker. La instalación en producción requiere HTTPS. Para comprobar HTTP con la web y PostgreSQL activos: `npm run test:web`.
 
@@ -229,7 +243,7 @@ El worker comprueba cada minuto. Los avisos de bloque solo se envían antes de e
 
 Ajustes muestra la última señal del worker, las diez últimas generaciones de tu cuenta, errores push pendientes y los intentos. Los fallos de agenda quedan en PostgreSQL durante 30 días, con reintento por usuario de uno a cinco minutos. Los fallos de una cuenta no retrasan los avisos de las demás. Si la base no está disponible, el worker registra el fallo en logs y el heartbeat deja de avanzar; no puede guardar un registro en una base caída.
 
-La migración `20261008220000_agenda_features` es aditiva y se aplica con `npm run db:migrate`. Las pruebas incluyen series y rollback, propiedad entre cuentas, medianoche, zonas y DST, traslados y descansos, foco, duraciones, caducidad y borrado offline, concurrencia push, reintentos y recuperación del worker. Las entregas push se prueban con un transporte simulado; verifica una entrega real en cada dispositivo después de configurar VAPID y desplegar por HTTPS.
+Las migraciones `20261009120000_learning_reliability` y `20261009130000_offline_changes` son aditivas y se aplican con `npm run db:migrate`. Las pruebas incluyen series y rollback, aislamiento entre cuentas, propiedades del planificador, medianoche, varias zonas y DST, traslados y descansos, foco, duraciones, persistencia de la cola offline, reintentos idempotentes, conflictos, caducidad y borrado de sesión, concurrencia push y recuperación del worker. Las entregas push se prueban con un transporte simulado; verifica una entrega real en cada dispositivo después de configurar VAPID y desplegar por HTTPS.
 
 Las sesiones activas se gestionan en Ajustes, junto con idioma español/inglés, reloj de 12/24 horas y comienzo de semana lunes/domingo. Las instrucciones de prueba local están en [TESTING.md](TESTING.md).
 

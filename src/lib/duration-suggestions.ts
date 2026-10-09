@@ -1,14 +1,15 @@
 import type { Prisma } from "@prisma/client";
 import { durationSuggestion } from "./insights";
 import { DomainError } from "./transaction";
-export const normalizedTitle = (title: string) => title.trim().toLocaleLowerCase();
+import { taskMeasurements } from "./duration-learning";
+export { normalizedTitle } from "./duration-learning";
 export async function taskDurationSuggestions(tx: Prisma.TransactionClient, userId: string) {
   const [tasks, history] = await Promise.all([
     tx.task.findMany({ where: { userId, archived: false, status: "INBOX" } }),
-    tx.event.findMany({ where: { userId, status: "DONE", chunkIndex: null, taskId: { not: null }, actualMinutes: { not: null } }, orderBy: { startsAt: "asc" }, select: { title: true, actualMinutes: true } }),
+    tx.event.findMany({ where: { userId, status: "DONE", chunkIndex: null, taskId: { not: null }, actualMinutes: { not: null } }, orderBy: [{ startsAt: "asc" }, { id: "asc" }], include: { task: true } }),
   ]);
   return tasks.flatMap(task => {
-    const suggestion = durationSuggestion(task.durationMinutes, history.filter(e => normalizedTitle(e.title) === normalizedTitle(task.title)).map(e => e.actualMinutes!));
+    const suggestion = durationSuggestion(task.durationMinutes, taskMeasurements(task, history));
     return suggestion ? [{ taskId: task.id, title: task.title, ...suggestion }] : [];
   });
 }

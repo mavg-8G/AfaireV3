@@ -23,15 +23,17 @@ test("bundled worker starts and shuts down with only Prisma installed", async ()
     await bundle("scripts/worker.ts", directory);
     const prisma = path.join(directory, "node_modules/@prisma/client"); mkdirSync(prisma, { recursive: true });
     writeFileSync(path.join(prisma, "index.js"), `exports.PrismaClient = class {
+      constructor() { setTimeout(() => process.emit('SIGTERM'), 1000); }
       user = { findMany: async () => [] };
       workerRun = { deleteMany: async () => ({count:0}) };
       usageSample = this.workerRun;
       accessAttempt = this.workerRun;
+      offlineMutation = this.workerRun;
       workerHeartbeat = { upsert: async () => { console.log('heartbeat written'); setImmediate(() => process.emit('SIGTERM')); } };
       async $disconnect() { console.log('connection closed'); }
     }; exports.Prisma = {};`);
-    const result = spawnSync(process.execPath, ["entry.cjs"], { cwd: directory, timeout: 15000, encoding: "utf8", env: { ...process.env, AUTH_SECRET: "container-test-secret-with-more-than-32-characters", NEXTAUTH_URL: "http://localhost:3000", DATABASE_URL: "postgresql://test:test-password@localhost/test", REGISTRATION_MODE: "open", VAPID_PUBLIC_KEY: "", VAPID_PRIVATE_KEY: "", VAPID_SUBJECT: "" } });
-    assert.equal(result.status, 0, result.stderr || result.stdout); assert.match(result.stdout, /heartbeat written/); assert.match(result.stdout, /connection closed/);
+    const result = spawnSync(process.execPath, ["entry.cjs"], { cwd: directory, timeout: 15000, encoding: "utf8", env: { ...process.env, AUTH_SECRET: "container-test-secret-with-more-than-32-characters", NEXTAUTH_URL: "http://localhost:3000", DATABASE_URL: "postgresql://test:test-password@127.0.0.1:1/test", REGISTRATION_MODE: "open", VAPID_PUBLIC_KEY: "", VAPID_PRIVATE_KEY: "", VAPID_SUBJECT: "" } });
+    assert.equal(result.status, 0, result.stderr || result.stdout); assert.match(result.stderr, /base de datos no disponible/); assert.doesNotMatch(result.stdout, /heartbeat written/); assert.match(result.stdout, /connection closed/);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 

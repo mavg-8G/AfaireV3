@@ -71,7 +71,7 @@ export async function undoPlan(userId: string, revisionId: string, now = new Dat
     }
     if (before.override) await tx.dayOverride.upsert({ where: { userId_date: { userId, date: revision.date } }, create: before.override, update: { label: before.override.label, paused: before.override.paused, startTime: before.override.startTime, endTime: before.override.endTime, capacityPercent: before.override.capacityPercent, essentialOnly: before.override.essentialOnly } });
     else await tx.dayOverride.deleteMany({ where: { userId, date: revision.date } });
-    if (before.plan) await tx.dayPlan.update({ where: { userId_date: { userId, date: revision.date } }, data: { skipped: before.plan.skipped, details: before.plan.details ?? [], generatedAt: now, version: { increment: 1 } } });
+    if (before.plan) await tx.dayPlan.update({ where: { userId_date: { userId, date: revision.date } }, data: { skipped: before.plan.skipped, details: before.plan.details ?? [], unscheduledTaskCount: before.plan.unscheduledTaskCount ?? 0, generatedAt: now, version: { increment: 1 } } });
     else await tx.dayPlan.deleteMany({ where: { userId, date: revision.date } });
     await tx.planRevision.update({ where: { id: revision.id }, data: { undoneAt: now } });
     await saveRevision(tx, userId, day, current, "UNDO", now);

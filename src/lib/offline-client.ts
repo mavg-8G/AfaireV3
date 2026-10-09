@@ -7,5 +7,11 @@ export async function clearOfflineDay() {
       registration.active!.postMessage({ type: "CLEAR_DAY" }, [channel.port2]);
     });
   }
-  if ("caches" in window) await caches.delete("afaire-day-v1");
+  if ("caches" in window) { await caches.delete("afaire-day-v1"); await caches.delete("afaire-changes-v1"); }
+}
+
+export function openOfflinePlanner() {
+  // The service worker serves the editor on document navigation, not an RSC fetch.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  window.location.assign("/?offline=1");
 }

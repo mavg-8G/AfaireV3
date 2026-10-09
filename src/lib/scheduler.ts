@@ -9,6 +9,7 @@ export type Schedulable = {
   key: string; title: string; durationMinutes: number; priority: number;
   preferredWindow: PreferredWindow; preferred?: Gap | null;
   focusReason?: string; originalMinutes?: number; explicitEstimate?: boolean; energy?: string; required?: boolean; dueDate?: Date | null; createdAt?: Date;
+  durationEvidence?: { samples: number; median: number };
   habitId?: string; occurrenceId?: string; taskId?: string; source: "HABIT" | "AUTO";
 };
 export type Placement = { item: Schedulable; startsAt: Date; endsAt: Date; recoveryMinutes: number; reason: string; chunkIndex?: number; chunkCount?: number };
@@ -165,6 +166,7 @@ export function scheduleInWindows(windows: Gap[], busy: Busy[], items: Schedulab
     const reasons = [slot.preferred ? (item.focusReason ?? "Encaja en tu franja preferida.") : item.preferred ? "Tu franja preferida no tenía un hueco suficiente; se usó el primer espacio disponible." : "Es el primer hueco disponible para esta actividad.", `${item.durationMinutes} min dentro de tu disponibilidad, con ${buffer} min de descanso entre bloques y respetando citas y traslados.`, item.required ? "Hábito esencial: se organiza antes que las actividades opcionales." : `Prioridad ${item.priority}${item.dueDate ? ` y vencimiento ${item.dueDate.toISOString().slice(0, 10)}` : ""}.`];
     if (item.dueDate) reasons.push(`Prioridad base ${item.priority}, efectiva ${effectivePriority(item, policy)}. ${policy.urgencyEnabled === false ? "Bonus de urgencia desactivado." : `Urgencia: +1 nivel a ${policy.urgencySoonDays ?? 3} días, +2 a ${policy.urgencyNearDays ?? 1} días y máxima si venció.`}`);
     if (item.originalMinutes && item.originalMinutes !== item.durationMinutes) reasons.push(`Duración ajustada de ${item.originalMinutes} a ${item.durationMinutes} min según ${item.explicitEstimate ? "tu feedback reciente" : "tus mediciones anteriores"}.`);
+    if (item.durationEvidence) reasons.push(`Basado en ${item.durationEvidence.samples} mediciones, mediana ${item.durationEvidence.median} min.`);
     if (item.budgetFill) reasons.push("Tiempo reservado para acercarte al objetivo semanal de esta categoría.");
     if (recoveryMinutes) reasons.push(`${recoveryMinutes} min adicionales de recuperación después de este bloque largo.`);
     if (policy.maxMinutes != null) reasons.push("Se respeta el límite de capacidad y la holgura reservada para este día.");
