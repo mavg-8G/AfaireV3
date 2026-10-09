@@ -1,4 +1,5 @@
 "use server";
+import { translator } from "@/lib/locale";
 import { revalidatePath } from "next/cache";
 import { SettingsFormSchema, type ActionResult } from "@/lib/definitions";
 import { requireUser } from "@/lib/dal";
@@ -36,7 +37,7 @@ export async function updateSettings(formData: FormData): Promise<ActionResult> 
         const selected = new Set(formData.getAll("templates").map(String));
         if (selected.size && !rows.some(row => row.active)) throw new DomainError("Activa al menos un día para crear tus rutinas iniciales.");
         for (const template of HABIT_TEMPLATES.filter(t => selected.has(t.key))) {
-          const habit = { title: template.title, durationMinutes: template.durationMinutes, preferredWindow: template.preferredWindow, priority: template.priority, required: template.required };
+          const habit = { title: translator(current.locale)(template.title), durationMinutes: template.durationMinutes, preferredWindow: template.preferredWindow, priority: template.priority, required: template.required };
           await tx.habit.create({ data: { ...habit, userId: user.id, daysOfWeek: rows.filter(row => row.active).map(row => row.weekday) } });
         }
         await tx.user.update({ where: { id: user.id }, data: { onboardingCompleted: true } });

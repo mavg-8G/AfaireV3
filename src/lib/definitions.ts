@@ -20,12 +20,13 @@ const schedulable = {
   priority: z.coerce.number().int().min(1).max(3),
   preferredWindow: z.enum(["MORNING", "AFTERNOON", "EVENING", "ANY"]),
 };
-export const HabitFormSchema = z.object({ ...schedulable, daysOfWeek: z.array(z.coerce.number().int().min(0).max(6)).min(1).transform(days => [...new Set(days)]), required: z.boolean().default(false) });
+export const HabitFormSchema = z.object({ ...schedulable, daysOfWeek: z.array(z.coerce.number().int().min(0).max(6)).transform(days => [...new Set(days)]), required: z.boolean().default(false), frequencyMode: z.enum(["DAYS", "WEEKLY"]).default("DAYS"), weeklyTarget: z.coerce.number().int().min(1).max(7).default(3) }).refine(value => value.frequencyMode === "WEEKLY" || value.daysOfWeek.length > 0, "Elige días o una frecuencia semanal.");
 export const TaskFormSchema = z.object({ ...schedulable, dueDate: z.union([DateSchema, z.literal("")]).optional(), energy: z.enum(["DEEP", "LIGHT"]).default("LIGHT") });
 export const AvailabilitySchema = z.object({ weekday: z.number().int().min(0).max(6), active: z.boolean(), start: TimeSchema, end: TimeSchema }).refine(value => value.start < value.end, "La hora final debe ser posterior al inicio.");
 export const SettingsFormSchema = z.object({
   name: z.string().trim().min(2).max(80), timezone: TimezoneSchema,
   dayStart: TimeSchema, dayEnd: TimeSchema, bufferMinutes: z.coerce.number().int().min(0).max(60),
+  slackPercent: z.coerce.number().int().min(0).max(50).default(0), longBlockMinutes: z.coerce.number().int().min(30).max(240).default(90), recoveryMinutes: z.coerce.number().int().min(0).max(60).default(0),
   autoPlan: z.boolean(), carryOver: z.boolean(),
   adaptiveAvailability: z.boolean(), adaptiveDurations: z.boolean().default(false), focusWindow: z.enum(["MORNING", "AFTERNOON", "EVENING", "LEARNED"]).default("MORNING"),
   availability: z.array(AvailabilitySchema).length(7).refine(rows => new Set(rows.map(row => row.weekday)).size === 7),

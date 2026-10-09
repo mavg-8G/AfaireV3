@@ -36,6 +36,16 @@ model User {
   workerRuns          WorkerRun[]
   adaptiveDurations   Boolean @default(false)
   focusWindow         String @default("MORNING")
+  slackPercent Int @default(0)
+  longBlockMinutes Int @default(90)
+  recoveryMinutes Int @default(0)
+  dayOverrides DayOverride[]
+  taskSeries TaskSeries[]
+  templateUses TemplateUse[]
+  deviceSessions DeviceSession[]
+  locale String @default("es")
+  hourFormat String @default("24")
+  weekStartsOn Int @default(1)
 }
 
 model Availability {
@@ -73,6 +83,8 @@ model Event {
   startedAt    DateTime? @db.Timestamptz(3)
   actualMinutes Int?
   estimatedMinutes Int?
+  planningReason String?
+  recoveryMinutes Int @default(0)
   habitId      String?
   habit        Habit?      @relation(fields: [habitId, userId], references: [id, userId], onDelete: NoAction)
   occurrenceId String?     @unique
@@ -98,6 +110,8 @@ model Habit {
   required        Boolean         @default(false)
   preferredWindow PreferredWindow @default(ANY)
   daysOfWeek      Int[]
+  frequencyMode String @default("DAYS")
+  weeklyTarget Int @default(3)
   active          Boolean         @default(true)
   archived        Boolean         @default(false)
   createdAt       DateTime        @default(now()) @db.Timestamptz(3)
@@ -134,11 +148,16 @@ model Task {
   preferredWindow PreferredWindow @default(ANY)
   archived        Boolean         @default(false)
   energy          String          @default("LIGHT")
+  availableFrom DateTime? @db.Date
+  seriesId String?
+  series TaskSeries? @relation(fields: [seriesId, userId], references: [id, userId], onDelete: NoAction)
+  periodStart DateTime? @db.Date
   createdAt       DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
   events          Event[]
   @@unique([id, userId])
   @@index([userId, status])
+  @@unique([seriesId, periodStart])
 }
 
 model DayPlan {
@@ -193,6 +212,9 @@ model NotificationSettings {
   summaryTime String @default("08:00")
   dueTomorrow Boolean @default(true)
   dueTime String @default("18:00")
+  quietEnabled Boolean @default(false)
+  quietStart String @default("22:00")
+  quietEnd String @default("08:00")
 }
 
 model PushSubscription {
@@ -204,6 +226,8 @@ model PushSubscription {
   auth String
   sessionVersion Int
   deliveries PushDelivery[]
+  deviceSessionId String?
+  deviceSession DeviceSession? @relation(fields: [deviceSessionId, userId], references: [id, userId], onDelete: NoAction)
 }
 
 model PushDelivery {
@@ -219,6 +243,7 @@ model PushDelivery {
 }
 
 model WorkerRun {
+  kind String @default("PLAN")
   retryAt DateTime? @db.Timestamptz(3)
   id String @id @default(cuid())
   userId String
@@ -266,4 +291,58 @@ enum PreferredWindow {
   AFTERNOON
   EVENING
   ANY
+}
+
+model DayOverride {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date DateTime @db.Date
+  label String?
+  paused Boolean @default(false)
+  startTime String?
+  endTime String?
+  capacityPercent Int @default(100)
+  essentialOnly Boolean @default(false)
+  @@unique([userId, date])
+}
+
+model TaskSeries {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title String
+  durationMinutes Int
+  priority Int @default(2)
+  preferredWindow PreferredWindow @default(ANY)
+  energy String @default("LIGHT")
+  frequency String
+  anchorDate DateTime @db.Date
+  windowDays Int @default(7)
+  active Boolean @default(true)
+  tasks Task[]
+  @@unique([id, userId])
+}
+
+model TemplateUse {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key String
+  date DateTime @db.Date
+  @@unique([userId, key, date])
+}
+
+model DeviceSession {
+  id String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  lastSeenAt DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  subscriptions PushSubscription[]
+  @@unique([id, userId])
+  @@index([userId, expiresAt])
 }

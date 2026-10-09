@@ -7,7 +7,7 @@
   --muted: #6b6158;
   --line: #d9d0c3;
   --card: #fffdf8;
-  --terracotta: #c45c26;
+  --terracotta: #a7481b;
   --sage: #3f6b58;
   --gold: #c9a227;
   --glow-start: #efe6d4;
@@ -141,3 +141,12 @@ button:disabled { cursor: wait; opacity: .55; }
 input[type="checkbox"] { accent-color: var(--sage); }
 dialog::backdrop { background: rgb(31 26 22 / 55%); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+
+.skip-link { position: fixed; top: .75rem; left: .75rem; z-index: 100; transform: translateY(-200%); padding: .75rem 1rem; border-radius: .75rem; background: var(--ink); color: var(--card); }
+.skip-link:focus { transform: translateY(0); }
+button, select, summary, nav a { min-height: 2.75rem; }
+summary { padding-block: .5rem; }
+input[type="checkbox"] { min-width: 1.25rem; min-height: 1.25rem; }
+#main-content { scroll-margin-top: 9rem; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; } }
+@media (forced-colors: active) { .field, button, select, summary { border: 1px solid ButtonText; } :focus-visible { outline-color: Highlight; } }

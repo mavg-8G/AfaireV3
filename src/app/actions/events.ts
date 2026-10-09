@@ -41,7 +41,7 @@ export async function updateEventTimes(id: string, formData: FormData): Promise<
         await replaceFollowingSeries(tx, user.id, event.id, { ...rule, title: data.title, notes: data.notes, location: data.location, travelMinutes: data.travelMinutes }); return;
       }
       await assertFree(tx, user.id, data.startsAt, data.endsAt, id, data.travelMinutes);
-      await tx.event.update({ where: { id }, data: { ...data, locked: true } });
+      await tx.event.update({ where: { id }, data: { ...data, locked: true, recoveryMinutes: 0, planningReason: "Horario elegido manualmente y fijado por ti." } });
     }); refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }
@@ -72,7 +72,7 @@ export async function lockEvent(id: string) {
     await withUserLock(user.id, async tx => {
       const event = await ownedEvent(tx, user.id, id);
       if (["CANCELLED", "SKIPPED"].includes(event.status)) throw new DomainError("Este bloque ya fue retirado.");
-      await tx.event.update({ where: { id }, data: { locked: true } });
+      await tx.event.update({ where: { id }, data: { locked: true, planningReason: "Horario fijado por ti; el planificador conserva este bloque." } });
     }); refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }

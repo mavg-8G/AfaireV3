@@ -1,4 +1,4 @@
-import type { Availability } from "@prisma/client";
+import type { Availability, DayOverride } from "@prisma/client";
 import { calendarDayBounds, combineLocalDateTime, weekdayForDate } from "./time";
 import type { Gap } from "./scheduler";
 
@@ -26,14 +26,16 @@ export function effectiveMinutes(profile: Profile, weekday: number) {
   const learned = profile.adaptiveAvailability ? validMinuteWindows(row?.learnedWindows) : [];
   return learned.length ? learned : [{ start: hmMinutes(row?.start ?? profile.dayStart), end: hmMinutes(row?.end ?? profile.dayEnd) }];
 }
-export function availabilityWindows(profile: Profile, date: string, timezone: string): Gap[] {
+export function availabilityWindows(profile: Profile, date: string, timezone: string, override?: Pick<DayOverride, "paused" | "startTime" | "endTime"> | null): Gap[] {
+  if (override?.paused) return [];
+  if (override?.startTime && override.endTime) return [{ start: combineLocalDateTime(date, override.startTime, timezone), end: combineLocalDateTime(date, override.endTime, timezone) }];
   const calendar = calendarDayBounds(date, timezone);
   return effectiveMinutes(profile, weekdayForDate(date)).map(window => ({
     start: combineLocalDateTime(date, minuteLabel(window.start), timezone),
     end: window.end === 1440 ? calendar.end : combineLocalDateTime(date, minuteLabel(window.end), timezone),
   }));
 }
-export function availabilitySummary(profile: Profile, weekday: number) {
+export function availabilitySummary(profile: Profile, weekday: number, clock: (value: string) => string = value => value) {
   const windows = effectiveMinutes(profile, weekday);
-  return windows.length ? windows.map(window => `${minuteLabel(window.start)}–${minuteLabel(window.end)}`).join(" · ") : "Sin disponibilidad automática";
+  return windows.length ? windows.map(window => `${clock(minuteLabel(window.start))}–${clock(minuteLabel(window.end))}`).join(" · ") : "Sin disponibilidad automática";
 }

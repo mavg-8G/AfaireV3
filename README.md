@@ -1,5 +1,7 @@
 # Afaire 2
 
+Guía de pruebas de agenda, avisos, capacidad del planificador y sesiones: consulta [TESTING.md](TESTING.md).
+
 Versión 2.0.0. Apariencia clara, nocturna o automática según el sistema, con selección guardada por navegador. El selector Tema está disponible en la cabecera y al iniciar sesión. La vista sin conexión sigue el tema del sistema.
 
 Planificador diario para varias personas. Cada cuenta tiene su agenda privada: citas fijas, hábitos, tareas pendientes y planificación automática en los huecos disponibles.
@@ -209,3 +211,5 @@ El worker comprueba cada minuto. Los avisos de bloque solo se envían antes de e
 Ajustes muestra la última señal del worker, las diez últimas generaciones de tu cuenta, errores push pendientes y los intentos. Los fallos de agenda quedan en PostgreSQL durante 30 días, con reintento por usuario de uno a cinco minutos. Los fallos de una cuenta no retrasan los avisos de las demás. Si la base no está disponible, el worker registra el fallo en logs y el heartbeat deja de avanzar; no puede guardar un registro en una base caída.
 
 La migración `20261008220000_agenda_features` es aditiva y se aplica con `npm run db:migrate`. Las pruebas incluyen series y rollback, propiedad entre cuentas, medianoche, zonas y DST, traslados y descansos, foco, duraciones, caducidad y borrado offline, concurrencia push, reintentos y recuperación del worker. Las entregas push se prueban con un transporte simulado; verifica una entrega real en cada dispositivo después de configurar VAPID y desplegar por HTTPS.
+
+Las sesiones activas se gestionan en Ajustes, junto con idioma español/inglés, reloj de 12/24 horas y comienzo de semana lunes/domingo. Las instrucciones de prueba local están en [TESTING.md](TESTING.md).

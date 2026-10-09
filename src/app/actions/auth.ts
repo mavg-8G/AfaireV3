@@ -1,4 +1,5 @@
 "use server";
+import { parsePreferences } from "@/lib/locale";
 import bcrypt from "bcryptjs";
 import { timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -21,7 +22,7 @@ export async function signup(formData: FormData): Promise<AuthFormState> {
   if (!await allowAttempt(`signup:${parsed.data.email}`, 5)) return { message: "Demasiados intentos. Espera 15 minutos." };
   try {
     await prisma.user.create({ data: {
-      email: parsed.data.email, name: parsed.data.name, timezone: parsed.data.timezone,
+      ...parsePreferences(Object.fromEntries(formData)), email: parsed.data.email, name: parsed.data.name, timezone: parsed.data.timezone,
       passwordHash: await bcrypt.hash(parsed.data.password, 12),
       availability: { create: Array.from({ length: 7 }, (_, weekday) => ({ weekday, start: "08:00", end: "22:00", active: true })) },
     } });
@@ -41,6 +42,8 @@ export async function changePassword(_state: AuthFormState, formData: FormData):
     const current = await tx.user.findUniqueOrThrow({ where: { id: user.id } });
     if (current.passwordHash !== record.passwordHash) throw new Error("Contraseña modificada en otra sesión.");
     await tx.user.update({ where: { id: user.id }, data: { passwordHash: hash, sessionVersion: { increment: 1 } } });
+    await tx.pushSubscription.deleteMany({ where: { userId: user.id } });
+    await tx.deviceSession.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } });
   });
   revalidatePath("/", "layout");
   return { ok: true, message: "Contraseña actualizada. Inicia sesión de nuevo." };

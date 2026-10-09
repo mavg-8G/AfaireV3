@@ -97,3 +97,7 @@ test("invalid sessions clear the snapshot and push clicks cannot navigate off-si
   await h.push({ key: "event:1", title: "Next block", body: "Class", url: "/" }); assert.equal(h.notices[0].options.tag, "event:1");
   await h.click("https://evil.invalid/"); assert.deepEqual(h.opened, [origin + "/"]);
 });
+
+test("offline snapshot keeps language, clock strings and explicit theme without translating private titles",async()=>{
+ const h=harness();await h.lifecycle("install");h.snapshot({...daySnapshot(),locale:"en",hourFormat:"12",theme:"dark",events:[{title:"Contraseña",start:"09:00 AM",end:"10:00 AM",status:"DONE",location:"Home"}]});await h.message("REFRESH_DAY");h.offline();const body=await(await h.request("/"))!.text();assert.match(body,/lang="en"/);assert.match(body,/data-theme="dark"/);assert.match(body,/read only/);assert.match(body,/09:00 AM/);assert.match(body,/Completed/);assert.match(body,/Contraseña/);assert.doesNotMatch(body,/<script|<form/);
+});

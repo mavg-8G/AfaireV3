@@ -8,6 +8,7 @@ export function dateOnly(value: string) { DateSchema.parse(value); return new Da
 export function addLocalDays(value: string, days: number) { const d = dateOnly(value); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
 export function ymdInZone(date: Date, timezone: string) { return format(new TZDate(date, timezone), "yyyy-MM-dd"); }
 export function weekdayForDate(value: string) { return dateOnly(value).getUTCDay(); }
+export function startOfLocalWeek(day: string, weekStartsOn = 1) { return addLocalDays(day, -((weekdayForDate(day) - weekStartsOn + 7) % 7)); }
 export function weekdayInZone(date: Date, timezone: string) { return weekdayForDate(ymdInZone(date, timezone)); }
 export function nowInZone(timezone: string) { return new TZDate(new Date(), timezone); }
 

@@ -28,7 +28,9 @@ async function main() {
   PasswordFormSchema.parse({ currentPassword: "reset", newPassword: password });
   const user = await prisma.user.findUniqueOrThrow({ where: { email } });
   const passwordHash = await bcrypt.hash(password, 12);
-  await withUserLock(user.id, async tx => { await tx.user.update({ where: { id: user.id }, data: { passwordHash, sessionVersion: { increment: 1 } } }); });
+  await withUserLock(user.id, async tx => { await tx.user.update({ where: { id: user.id }, data: { passwordHash, sessionVersion: { increment: 1 } } });
+    await tx.pushSubscription.deleteMany({ where: { userId: user.id } });
+    await tx.deviceSession.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } }); });
   console.log("Contraseña actualizada; todas las sesiones anteriores quedan invalidadas.");
 }
 main().catch(error => { console.error(error instanceof Error ? error.message : "Error"); process.exitCode = 1; }).finally(() => prisma.$disconnect());

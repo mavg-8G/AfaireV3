@@ -1,5 +1,5 @@
 /* Public shell plus one authenticated, expiring, read-only snapshot. Never cache HTML or mutations. */
-const CACHE_NAME = "afaire-public-v3";
+const CACHE_NAME = "afaire-public-v4";
 const DAY_CACHE = "afaire-day-v1";
 let snapshotGeneration = 0;
 const PUBLIC_ASSETS = ["/offline.html", "/offline.css", "/pwa/icon-192.png", "/pwa/icon-512.png", "/pwa/maskable-512.png", "/pwa/apple-touch-icon.png"];
@@ -58,9 +58,12 @@ async function readDay() {
 }
 function offlineDay(snapshot) {
   const escape = value => String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
-  const labels = { DONE: "Completado", SKIPPED: "Omitido", PENDING: "Pendiente", IN_PROGRESS: "En curso" };
+  const en = snapshot.locale === "en", lang = en ? "en" : "es", theme = ["light", "dark"].includes(snapshot.theme) ? snapshot.theme : "system";
+  const labels = en ? { DONE: "Completed", SKIPPED: "Skipped", PENDING: "Pending", IN_PROGRESS: "In progress" } : { DONE: "Completado", SKIPPED: "Omitido", PENDING: "Pendiente", IN_PROGRESS: "En curso" };
   const rows = snapshot.events.map(e => '<li><strong>' + escape(e.start) + ' – ' + escape(e.end) + ' · ' + escape(e.title) + '</strong><p>' + escape(labels[e.status] || e.status) + (e.location ? ' · ' + escape(e.location) : '') + '</p></li>').join("");
-  return new Response('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hoy sin conexión · Afaire</title><link rel="stylesheet" href="/offline.css"></head><body><main><p class="eyebrow">Sin conexión · solo lectura</p><h1>Tu agenda de hoy</h1><p>' + escape(snapshot.day) + ' · ' + escape(snapshot.timezone) + '</p><p class="note">Última copia: ' + escape(snapshot.savedAt) + '. Puede haber cambios posteriores.</p><ul>' + (rows || '<li>No hay bloques guardados.</li>') + '</ul><a href="/">Volver a conectar →</a></main></body></html>', { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
+  let saved = snapshot.savedAt;
+  try { saved = new Intl.DateTimeFormat(lang, { timeZone: snapshot.timezone, dateStyle: "medium", timeStyle: "short", hourCycle: snapshot.hourFormat === "12" ? "h12" : "h23" }).format(new Date(snapshot.savedAt)); } catch { /* Legacy copies may omit locale fields. */ }
+  return new Response('<!doctype html><html lang="' + lang + '" data-theme="' + theme + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + (en ? 'Today offline' : 'Hoy sin conexión') + ' · Afaire</title><link rel="stylesheet" href="/offline.css"></head><body><main><p class="eyebrow">' + (en ? 'Offline · read only' : 'Sin conexión · solo lectura') + '</p><h1>' + (en ? 'Your planner today' : 'Tu agenda de hoy') + '</h1><p>' + escape(snapshot.day) + ' · ' + escape(snapshot.timezone) + '</p><p class="note">' + (en ? 'Last copy: ' : 'Última copia: ') + escape(saved) + (en ? '. There may be newer changes.' : '. Puede haber cambios posteriores.') + '</p><ul>' + (rows || (en ? '<li>No saved blocks.</li>' : '<li>No hay bloques guardados.</li>')) + '</ul><a href="/">' + (en ? 'Reconnect →' : 'Volver a conectar →') + '</a></main></body></html>', { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
 }
 self.addEventListener("message", event => {
   if (!event.source || new URL(event.source.url).origin !== self.location.origin) return;

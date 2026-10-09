@@ -1,14 +1,16 @@
+import { materializeTaskSeries } from "./task-series";
+import { weeklyHabitDue } from "./weekly-habits";
 import { Prisma } from "@prisma/client";
 import { adjustedDuration, learnedFocus } from "./insights";
 import { prisma } from "./prisma";
 import { DateSchema } from "./definitions";
 import { withUserLock, DomainError } from "./transaction";
-import { calendarDayBounds, dateOnly, preferredBounds, roundUp, weekdayForDate, ymdInZone, addMinutesUtc } from "./time";
+import { calendarDayBounds, dateOnly, preferredBounds, roundUp, weekdayForDate, ymdInZone, addMinutesUtc, addLocalDays } from "./time";
 import { availabilityWindows } from "./availability";
-import { habitToSchedulable, taskToSchedulable, scheduleInWindows, type Schedulable } from "./scheduler";
+import { habitToSchedulable, taskToSchedulable, scheduleInWindows, freeMinutes, type Schedulable } from "./scheduler";
 
 export type Unscheduled = { key: string; title: string; reason: string; required: boolean };
-export async function generateDay(userId: string, requestedDay?: string, options: { now?: Date; onlyIfMissing?: boolean; recordWorkerRun?: boolean } = {}) {
+export async function generateDay(userId: string, requestedDay?: string, options: { now?: Date; onlyIfMissing?: boolean; recordWorkerRun?: boolean; dayMode?: "NORMAL" | "SHORT" | "DIFFICULT" } = {}) {
   const now = options.now ?? new Date();
   return withUserLock(userId, async tx => {
     const user = await tx.user.findUniqueOrThrow({ where: { id: userId }, include: { availability: true } });
@@ -16,14 +18,19 @@ export async function generateDay(userId: string, requestedDay?: string, options
     const day = DateSchema.parse(requestedDay ?? today);
     if (day < today) throw new DomainError("Solo puedes planificar hoy o una fecha futura.");
     const date = dateOnly(day);
+    if (options.dayMode) {
+      const mode = { capacityPercent: options.dayMode === "NORMAL" ? 100 : options.dayMode === "SHORT" ? 50 : 30, essentialOnly: options.dayMode === "DIFFICULT" };
+      await tx.dayOverride.upsert({ where: { userId_date: { userId, date } }, create: { userId, date, ...mode }, update: mode });
+    }
+    const override = await tx.dayOverride.findUnique({ where: { userId_date: { userId, date } } });
     const existingPlan = await tx.dayPlan.findUnique({ where: { userId_date: { userId, date } } });
     if (options.onlyIfMissing && existingPlan) return { placed: 0, skipped: existingPlan.skipped, alreadyPlanned: true };
     const weekday = weekdayForDate(day);
-    const windows = availabilityWindows(user, day, user.timezone);
-    if (!windows.length) throw new DomainError("Este día no tiene disponibilidad. Actívalo en Ajustes.");
+    const windows = availabilityWindows(user, day, user.timezone, override);
+    if (!windows.length && !override?.paused) throw new DomainError("Este día no tiene disponibilidad. Actívalo en Ajustes.");
     const calendar = calendarDayBounds(day, user.timezone);
     const todayCalendar = calendarDayBounds(today, user.timezone);
-    const start = new Date(Math.max(windows[0].start.getTime(), day === today ? roundUp(now).getTime() : windows[0].start.getTime()));
+    const start = new Date(Math.max((windows[0]?.start ?? calendar.start).getTime(), day === today ? roundUp(now).getTime() : (windows[0]?.start ?? calendar.start).getTime()));
     const remainingWindows = windows.map(window => ({ ...window, start: new Date(Math.max(start.getTime(), window.start.getTime())) })).filter(window => window.end > window.start);
 
     // A pending task from a previous day can be released without copying its identity.
@@ -46,11 +53,14 @@ export async function generateDay(userId: string, requestedDay?: string, options
       await tx.event.deleteMany({ where: { userId, id: { in: [...replacementIds] } } });
       await tx.task.updateMany({ where: { userId, archived: false, status: "SCHEDULED", id: { in: replaceable.flatMap(event => event.taskId ? [event.taskId] : []) } }, data: { status: "INBOX" } });
     }
+    await materializeTaskSeries(tx, userId, day, addLocalDays(day, 90));
     const history = user.adaptiveDurations ? await tx.event.findMany({ where: { userId, status: "DONE", actualMinutes: { not: null } }, orderBy: { startsAt: "asc" }, include: { task: true } }) : [];
     const focus = user.focusWindow === "LEARNED" ? learnedFocus(await tx.usageSample.findMany({ where: { userId, timezone: user.timezone, observedAt: { gte: new Date(now.getTime() - 28 * 86400_000) } } }), "MORNING") : user.focusWindow;
-    const habits = await tx.habit.findMany({ where: { userId, active: true, archived: false, daysOfWeek: { has: weekday } }, orderBy: { id: "asc" } });
+    const habits = await tx.habit.findMany({ where: { userId, active: true, archived: false, OR: [{ frequencyMode: "DAYS", daysOfWeek: { has: weekday } }, { frequencyMode: "WEEKLY" }] }, orderBy: { id: "asc" } });
     const items: Schedulable[] = [];
     for (const habit of habits) {
+      if (override?.essentialOnly && !habit.required) continue;
+      if (habit.frequencyMode === "WEEKLY" && !await weeklyHabitDue(tx, user, habit, day, now)) continue;
       const occurrence = await tx.habitOccurrence.upsert({
         where: { habitId_date: { habitId: habit.id, date } },
         create: { userId, habitId: habit.id, date },
@@ -58,19 +68,23 @@ export async function generateDay(userId: string, requestedDay?: string, options
         include: { event: true },
       });
       if (occurrence.status !== "PENDING" || occurrence.event) continue;
-      items.push({ ...habitToSchedulable(habit), durationMinutes: adjustedDuration(habit.durationMinutes, history.filter(e => e.habitId === habit.id).map(e => e.actualMinutes!)), occurrenceId: occurrence.id, preferred: preferredBounds(day, user.timezone, habit.preferredWindow) });
+      items.push({ ...habitToSchedulable(habit), originalMinutes: habit.durationMinutes, durationMinutes: adjustedDuration(habit.durationMinutes, history.filter(e => e.habitId === habit.id).map(e => e.actualMinutes!)), occurrenceId: occurrence.id, preferred: preferredBounds(day, user.timezone, habit.preferredWindow) });
     }
-    const tasks = await tx.task.findMany({ where: { userId, status: "INBOX", archived: false, events: { none: { status: { in: ["PENDING", "IN_PROGRESS"] } } } }, orderBy: { id: "asc" } });
-    for (const task of tasks) items.push({ ...taskToSchedulable(task), durationMinutes: adjustedDuration(task.durationMinutes, history.filter(e => e.task?.title.trim().toLocaleLowerCase() === task.title.trim().toLocaleLowerCase()).map(e => e.actualMinutes!)), preferred: preferredBounds(day, user.timezone, task.energy === "DEEP" && task.preferredWindow === "ANY" ? focus : task.preferredWindow) });
-    const result = scheduleInWindows(remainingWindows, protectedEvents, items, user.bufferMinutes);
+    const tasks = await tx.task.findMany({ where: { userId, status: "INBOX", archived: false, OR: [{ availableFrom: null }, { availableFrom: { lte: date } }], events: { none: { status: { in: ["PENDING", "IN_PROGRESS"] } } } }, orderBy: { id: "asc" } });
+    for (const task of tasks) items.push({ ...taskToSchedulable(task), originalMinutes: task.durationMinutes, focusReason: task.energy === "DEEP" && task.preferredWindow === "ANY" ? `Tarea profunda situada en tu franja de foco${user.focusWindow === "LEARNED" ? " estimada a partir del uso reciente" : " elegida en Ajustes"}.` : undefined, durationMinutes: adjustedDuration(task.durationMinutes, history.filter(e => e.title.trim().toLocaleLowerCase() === task.title.trim().toLocaleLowerCase()).map(e => e.actualMinutes!)), preferred: preferredBounds(day, user.timezone, task.energy === "DEEP" && task.preferredWindow === "ANY" ? focus : task.preferredWindow) });
+    const expiredKeys = new Set(tasks.filter(task => task.seriesId && task.dueDate && task.dueDate < date).map(task => `task:${task.id}`));
+    const deferred = items.filter(item => expiredKeys.has(item.key) || (override?.essentialOnly && !item.required && item.priority !== 1 && (!item.dueDate || item.dueDate > dateOnly(addLocalDays(day, 1)))));
+    const eligible = items.filter(item => !deferred.includes(item));
+    const budget = freeMinutes(remainingWindows, protectedEvents, user.bufferMinutes) * (1 - user.slackPercent / 100) * (override?.capacityPercent ?? 100) / 100;
+    const result = scheduleInWindows(remainingWindows, protectedEvents, eligible, user.bufferMinutes, { maxMinutes: user.slackPercent || (override?.capacityPercent ?? 100) < 100 ? budget : undefined, longBlockMinutes: user.longBlockMinutes, recoveryMinutes: user.recoveryMinutes });
     for (const placement of result.placements) {
       await tx.event.create({ data: {
         userId, title: placement.item.title, startsAt: placement.startsAt, endsAt: placement.endsAt, planningDate: date,
-        estimatedMinutes: placement.item.durationMinutes, locked: false, source: placement.item.source, habitId: placement.item.habitId, occurrenceId: placement.item.occurrenceId, taskId: placement.item.taskId,
+        recoveryMinutes: placement.recoveryMinutes, planningReason: placement.reason, estimatedMinutes: placement.item.durationMinutes, locked: false, source: placement.item.source, habitId: placement.item.habitId, occurrenceId: placement.item.occurrenceId, taskId: placement.item.taskId,
       } });
     }
     await tx.task.updateMany({ where: { userId, id: { in: result.placements.flatMap(p => p.item.taskId ? [p.item.taskId] : []) } }, data: { status: "SCHEDULED" } });
-    const details: Unscheduled[] = result.skipped.map(item => ({ key: item.key, title: item.title, reason: !remainingWindows.length ? "El horario del día ya terminó." : "No hay un hueco continuo suficiente con los descansos actuales.", required: Boolean(item.required) }));
+    const details: Unscheduled[] = [...result.skipped, ...deferred].map(item => ({ key: item.key, title: item.title, reason: expiredKeys.has(item.key) ? "La ventana de esta repetición ya venció. Revisa la tarea antes de recuperarla manualmente." : deferred.includes(item) ? "Pospuesta por el modo día difícil: se conservan esenciales, prioridad alta y vencimientos próximos." : override?.paused ? "Planificador pausado para esta fecha." : !remainingWindows.length ? "El horario del día ya terminó." : "No hay un hueco continuo suficiente dentro de la capacidad, la holgura y los descansos actuales.", required: Boolean(item.required) }));
     await tx.dayPlan.upsert({
       where: { userId_date: { userId, date } },
       create: { userId, date, generatedAt: now, skipped: details.map(item => item.title), details },
@@ -82,14 +96,17 @@ export async function generateDay(userId: string, requestedDay?: string, options
 }
 
 export async function runDuePlans(now = new Date(), options: { userIds?: string[] } = {}) {
-  const users = await prisma.user.findMany({ where: { autoPlan: true, onboardingCompleted: true, ...(options.userIds ? { id: { in: options.userIds } } : {}) }, include: { availability: true }, orderBy: { id: "asc" } });
+  const users = await prisma.user.findMany({ where: { onboardingCompleted: true, OR: [{ autoPlan: true }, { taskSeries: { some: { active: true } } }], ...(options.userIds ? { id: { in: options.userIds } } : {}) }, include: { availability: true, taskSeries: { where: { active: true }, select: { id: true } } }, orderBy: { id: "asc" } });
   let generated = 0; let failed = 0;
   for (const user of users) {
     try {
       const day = ymdInZone(now, user.timezone);
-      const lastRun = await prisma.workerRun.findFirst({ where: { userId: user.id, date: dateOnly(day) }, orderBy: { attemptedAt: "desc" } });
+      const lastRun = await prisma.workerRun.findFirst({ where: { userId: user.id, kind: "PLAN", date: dateOnly(day) }, orderBy: { attemptedAt: "desc" } });
       if (lastRun?.status === "FAILED" && lastRun.retryAt && now < lastRun.retryAt) continue;
-      const windows = availabilityWindows(user, day, user.timezone);
+      if (user.taskSeries.length) await withUserLock(user.id, tx=>materializeTaskSeries(tx,user.id,day,addLocalDays(day,90)));
+      if (!user.autoPlan) continue;
+      const override = await prisma.dayOverride.findUnique({ where: { userId_date: { userId: user.id, date: dateOnly(day) } } });
+      const windows = availabilityWindows(user, day, user.timezone, override);
       if (!windows.some(window => now >= window.start && now < window.end)) continue;
       const result = await generateDay(user.id, day, { now, onlyIfMissing: true, recordWorkerRun: true });
       if (!result.alreadyPlanned) generated++;
@@ -99,7 +116,7 @@ export async function runDuePlans(now = new Date(), options: { userIds?: string[
       const message = error instanceof DomainError || (error instanceof Error && /^(Esta hora|Esta fecha|El fin|Zona horaria)/.test(error.message)) ? error.message : "Error de generación. Se reintentará automáticamente; revisa los logs del worker.";
       const code = error instanceof Prisma.PrismaClientKnownRequestError ? error.code : error instanceof Prisma.PrismaClientInitializationError ? error.errorCode ?? "DATABASE" : error instanceof Error ? error.name : "Error";
       console.error(JSON.stringify({ worker: "daily-planner", userId: user.id, day, code, message }));
-      const recentFailures = await prisma.workerRun.count({ where: { userId: user.id, date: dateOnly(day), status: "FAILED" } });
+      const recentFailures = await prisma.workerRun.count({ where: { userId: user.id, kind: "PLAN", date: dateOnly(day), status: "FAILED" } });
       await prisma.workerRun.create({ data: { userId: user.id, date: dateOnly(day), retryAt: new Date(now.getTime() + Math.min(60_000 * 2 ** Math.min(recentFailures, 3), 300_000)), status: "FAILED", message, attemptedAt: now } });
     }
   }

@@ -1,5 +1,35 @@
 # Historial de cambios
 
+## 2026-10-09 · Planificador, sesiones y configuración regional
+
+- Gestión de sesiones por dispositivo, cierre individual o de las demás sesiones, invalidación de cookies copiadas y desvinculación de push al salir.
+- Preferencias de español/inglés, reloj de 12/24 horas y semanas desde lunes/domingo; cuotas, estadísticas, revisión y plantillas respetan el calendario elegido.
+- Navegación y formularios traducidos, avisos push según el idioma y copia offline con idioma, hora y tema guardados.
+- Acceso por teclado con salto al contenido, controles más amplios, estados accesibles y mejor contraste en bloques completados y tema oscuro.
+
+- Planificación con holgura porcentual y recuperación tras bloques largos, con presupuesto que incluye el tiempo ocupado por descansos.
+- Modo poco tiempo (50 %) y día difícil (30 %, esenciales y urgentes) por fecha, preservando citas, bloques fijados y completados.
+- Vacaciones, festivos y horarios temporales; el worker utiliza las mismas excepciones que la agenda.
+- Previsión de carga a 7 días y plazos en riesgo hasta 28 días, antes de generar el plan.
+- Tareas flexibles semanales y mensuales con ventana de cumplimiento, materialización idempotente y renovación incluso con autoagendado desactivado.
+- Hábitos por objetivo semanal, selección de días con más capacidad y estadísticas por semanas.
+- Plantillas de preparar viaje/entrega y semanas de trabajo o mañanas, sin modificar el horario base.
+
+- Horas de silencio en la zona de la cuenta, selección de tipos de aviso y retirada de endpoints 404/410 con historial visible.
+- Validación del estado y del horario del bloque bajo bloqueo de agenda antes de cada envío; deduplicación estable aunque cambie la antelación y compatibilidad con claves anteriores.
+- Observabilidad independiente de planificación y avisos, con registros por cuenta y procesamiento aislado de fallos.
+- Sugerencias de duración por tarea, calculadas con mediciones reales y aplicables desde la bandeja.
+- Explicación persistida de la colocación automática y del horario fijado manualmente.
+- Casos de DST, zona horaria, edición individual y de siguientes, carreras, reintentos y caducidad push. Guía manual en TESTING.md.
+
+### Validación y actualización
+
+63 pruebas unitarias, 52 de integración y 31 comprobaciones HTTP aprobadas, además de ESLint, compilación de producción y empaquetado del worker. Push verificado con transporte simulado; la recepción real se comprueba en los dispositivos del despliegue.
+
+Las migraciones `20261009010000_notification_quality`, `20261009020000_planner_capacity`, `20261009021000_capacity_constraints` y `20261009030000_sessions_locale` se aplican con el contenedor de migraciones durante la actualización. La versión del paquete se mantiene en 2.0.0. Las cookies anteriores sin registro de dispositivo requieren iniciar sesión de nuevo. Las suscripciones push existentes se conservan y se pueden retirar desde Ajustes.
+
+El push a GitHub inicia el workflow de verificación y publicación de imágenes por SHA. El VPS se actualiza por separado, una vez que las imágenes estén disponibles.
+
 ## 2.0.0 · 2026-10-08
 
 - Modo nocturno para agenda, ajustes, formularios e inicio de sesión. Selector Claro/Nocturno/Sistema con preferencia persistida por navegador y aplicada desde la respuesta inicial, sin destello claro.

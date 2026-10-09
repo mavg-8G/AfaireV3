@@ -1,6 +1,8 @@
 "use client";
+import { useI18n } from "@/components/LocaleProvider";
 import { useEffect } from "react";
 export function OfflineDaySync({ revision }: { revision: string }) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     let stopped = false;
@@ -15,5 +17,5 @@ export function OfflineDaySync({ revision }: { revision: string }) {
     navigator.serviceWorker.addEventListener("controllerchange", update);
     return () => { stopped = true; clearInterval(timer); window.removeEventListener("online", update); navigator.serviceWorker.removeEventListener("controllerchange", update); };
   }, [revision]);
-  return <p className="text-xs text-muted">La última copia de hoy estará disponible en lectura si pierdes la conexión.</p>;
+  return <p className="text-xs text-muted">{t("La última copia de hoy estará disponible en lectura si pierdes la conexión.")}</p>;
 }

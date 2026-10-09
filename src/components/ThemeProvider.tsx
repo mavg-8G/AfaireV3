@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/LocaleProvider";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export type Theme = "system" | "light" | "dark";
@@ -22,7 +23,8 @@ export function ThemeProvider({ initialTheme, children }: { initialTheme: Theme;
 }
 
 export function ThemePicker() {
+  const { t } = useI18n();
   const context = useContext(ThemeContext);
   if (!context) return null;
-  return <label className="flex items-center gap-2 text-sm text-muted">Tema<select aria-label="Tema de apariencia" value={context.theme} onChange={event => context.change(event.target.value as Theme)} className="rounded-lg border border-line bg-card px-2 py-1 text-ink"><option value="system">Sistema</option><option value="light">Claro</option><option value="dark">Nocturno</option></select></label>;
+  return <label className="flex items-center gap-2 text-sm text-muted">{t("Tema")}<select aria-label={t("Tema de apariencia")} value={context.theme} onChange={event => context.change(event.target.value as Theme)} className="rounded-lg border border-line bg-card px-2 py-1 text-ink"><option value="system">{t("Sistema")}</option><option value="light">{t("Claro")}</option><option value="dark">{t("Nocturno")}</option></select></label>;
 }

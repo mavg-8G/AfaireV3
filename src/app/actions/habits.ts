@@ -1,13 +1,14 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { HabitFormSchema, type ActionResult } from "@/lib/definitions";
+import { clearPendingHabitBlocks } from "@/lib/weekly-habits";
 import { requireUser } from "@/lib/dal";
 import { withUserLock, actionError, DomainError } from "@/lib/transaction";
 
 function parse(formData: FormData) {
   const result = HabitFormSchema.safeParse({ ...Object.fromEntries(formData), daysOfWeek: formData.getAll("daysOfWeek"), required: formData.get("required") === "on" });
   if (!result.success) throw new DomainError("Revisa duración, prioridad y días. Selecciona al menos un día.");
-  return result.data;
+  return { ...result.data, daysOfWeek: result.data.frequencyMode === "WEEKLY" ? [] : result.data.daysOfWeek };
 }
 export async function createHabit(formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
@@ -24,6 +25,7 @@ export async function updateHabit(id: string, formData: FormData): Promise<Actio
     await withUserLock(user.id, async tx => {
       const habit = await tx.habit.findFirst({ where: { id, userId: user.id, archived: false } });
       if (!habit) throw new DomainError("Hábito no encontrado.");
+      if (habit.frequencyMode !== data.frequencyMode || habit.weeklyTarget !== data.weeklyTarget || JSON.stringify([...habit.daysOfWeek].sort()) !== JSON.stringify([...data.daysOfWeek].sort())) await clearPendingHabitBlocks(tx,user.id,id);
       await tx.habit.update({ where: { id }, data });
     }); revalidatePath("/habits"); return { ok: true };
   } catch (error) { return actionError(error); }

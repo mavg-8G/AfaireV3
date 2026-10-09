@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/LocaleProvider";
 import { usePathname } from "next/navigation";
 import { clearOfflineDay } from "@/lib/offline-client";
 import { useEffect, useSyncExternalStore } from "react";
@@ -12,6 +13,7 @@ function deviceSnapshot() {
 }
 
 export function PwaProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const path = usePathname();
   useEffect(() => { if (["/login", "/register"].includes(path)) void clearOfflineDay(); }, [path]);
   const online = useSyncExternalStore(subscribeDevice, deviceSnapshot, () => true);
@@ -21,7 +23,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
   return <>
-    {!online && <p role="status" className="bg-ink px-5 py-3 text-center text-sm text-card">Sin conexión. Puedes consultar la copia de hoy en lectura; conéctate para guardar cambios.</p>}
+    {!online && <p role="status" className="bg-ink px-5 py-3 text-center text-sm text-card">{t("Sin conexión. Puedes consultar la copia de hoy en lectura; conéctate para guardar cambios.")}</p>}
     {children}
   </>;
 }

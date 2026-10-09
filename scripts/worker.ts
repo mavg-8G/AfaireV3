@@ -11,11 +11,12 @@ async function main() {
   let delay = 60_000;
   while (!stopping) {
     try {
-      const result = await runDuePlans();
-      const push = await runPushNotifications();
-      if (push.sent || push.failed) console.log(JSON.stringify({ time: new Date().toISOString(), push }));
-      if (result.generated || result.failed) console.log(JSON.stringify({ time: new Date().toISOString(), ...result }));
-      delay = 60_000; // Per-user failures retry next tick without delaying everyone's reminders.
+      let processFailed = false;
+      for (const [kind, run] of [["PLAN", runDuePlans], ["PUSH", runPushNotifications]] as const) {
+        try { const result = await run(); if (Object.values(result).some(value => value > 0)) console.log(JSON.stringify({ time: new Date().toISOString(), kind, ...result })); }
+        catch { processFailed = true; console.error(JSON.stringify({ time: new Date().toISOString(), kind, message: "Proceso fallido; se reintentará en el siguiente ciclo." })); }
+      }
+      delay = processFailed ? Math.min(delay * 2, 300_000) : 60_000;
     } catch {
       console.error("Worker: base de datos no disponible, se reintentará.");
       delay = Math.min(delay * 2, 300_000);

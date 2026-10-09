@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/dal";
 import { withUserLock, actionError, DomainError } from "@/lib/transaction";
 import { setEventStatus } from "@/lib/calendar";
 import { dateOnly } from "@/lib/time";
+import { applyTaskDurationSuggestion } from "@/lib/duration-suggestions";
 import type { Prisma } from "@prisma/client";
 
 function parse(formData: FormData) {
@@ -32,6 +33,7 @@ export async function updateTask(id: string, formData: FormData): Promise<Action
     const data = parse(formData);
     await withUserLock(user.id, async tx => {
       const task = await owned(tx, user.id, id);
+      if (task.seriesId && (!data.dueDate || (task.availableFrom && data.dueDate < task.availableFrom))) throw new DomainError("Una repetición necesita una fecha límite posterior o igual a su apertura.");
       if (task.status !== "INBOX") throw new DomainError("Devuelve la tarea a la bandeja antes de editarla.");
       await tx.task.update({ where: { id }, data });
     }); refresh(); return { ok: true };
@@ -67,5 +69,13 @@ export async function returnTaskToInbox(id: string) {
       await tx.event.updateMany({ where: { taskId: id, userId: user.id, status: { in: ["PENDING", "IN_PROGRESS"] } }, data: { status: "CANCELLED" } });
       await tx.task.update({ where: { id }, data: { status: "INBOX" } });
     }); refresh(); return { ok: true };
+  } catch (error) { return actionError(error); }
+}
+
+export async function acceptDurationSuggestion(id: string): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    await withUserLock(user.id, tx => applyTaskDurationSuggestion(tx, user.id, id));
+    refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }
