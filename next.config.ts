@@ -3,6 +3,13 @@ import { SECURITY_HEADERS } from "./src/lib/security";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingIncludes: {
+    "/*": [
+      "node_modules/@prisma/client/default.js",
+      "node_modules/@prisma/client/runtime/library.js",
+      "node_modules/.prisma/client/{default.js,index.js,package.json,schema.prisma,libquery_engine-*.so.node,query_engine-*.dll.node}",
+    ],
+  },
   poweredByHeader: false,
   async headers() {
     return [

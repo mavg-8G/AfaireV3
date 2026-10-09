@@ -6,6 +6,12 @@ Versión 2.0.0. Apariencia clara, nocturna o automática según el sistema, con 
 
 Planificador diario para varias personas. Cada cuenta tiene su agenda privada: citas fijas, hábitos, tareas pendientes y planificación automática en los huecos disponibles.
 
+Las tareas pueden habilitar «Permitir dividir en varios bloques» y elegir un fragmento mínimo (30 min por defecto). Primero se busca un hueco continuo; si falta, se reserva todo el trabajo restante en fragmentos que respetan ese mínimo. Cada bloque comparte la tarea y muestra su índice. Completar, omitir o replanificar un fragmento conserva el trabajo ya hecho; la tarea termina cuando se completan todos. La división está desactivada por defecto, también para tareas profundas. Las tareas divisibles conservan su duración explícita como objetivo total; las mediciones de fragmentos no se usan como estimaciones de tareas completas.
+
+En Ajustes, «Prioridad por urgencia» permite activar el bonus y cambiar sus umbrales: un nivel a tres días y dos niveles a un día del vencimiento, con prioridad alta para las vencidas. Los esenciales siguen primero; después se usa la prioridad efectiva y los empates por vencimiento e identidad. «¿Por qué este bloque está aquí?» explica la prioridad base, la efectiva y la regla aplicada.
+
+Las actividades sin espacio guardan un código de motivo en `DayPlan.details`, con propuestas verificadas para dividir, acortar, mover el vencimiento o liberar un bloque flexible concreto. Los botones aplican la decisión y recalculan el espacio conservando los bloques existentes. Si cambió la versión del plan, empezó el bloque o la propuesta ya no cabe, se rechaza sin cambios parciales. La migración `20261009110000_task_chunks_urgency` añade estos campos y permite varios fragmentos activos por tarea; se aplica con `npm run db:migrate`.
+
 Última actualización: 8 de octubre de 2026. Consulta el [historial de cambios](CHANGELOG.md) para ver las novedades y los requisitos de actualización.
 
 ## Lo que puedes hacer
@@ -99,6 +105,7 @@ npm run lint
 npm run test:integration
 npm run build
 npm run worker:build
+npm run admin:build
 ```
 
 Las pruebas de integración necesitan la base configurada y migrada. Crean cuentas con emails bajo `test.invalid` y eliminan únicamente sus propios datos al terminar. Incluyen generación repetida y concurrente, conservación de bloques, tareas futuras, arrastre, aislamiento de cuentas, restricciones PostgreSQL y worker.
@@ -116,6 +123,16 @@ sh /opt/docker/afaire/scripts/update.sh
 El servidor descarga imágenes del mismo commit, crea un respaldo, aplica migraciones y verifica web y worker. No necesita compilar ni copiar archivos manualmente. `.env` y el volumen PostgreSQL se conservan. Si una migración falla, los servicios quedan detenidos para su revisión.
 
 Los servicios son `afaire-web`, `worker`, `migrate` y `db`. Se utiliza tu Caddy existente. No hay puertos publicados para la web ni para PostgreSQL. `docker-compose.proxy.yml` conecta solo la web a la red `proxy` de tu Caddy.
+
+La imagen compartida por web y worker contiene la salida standalone de Next.js, el worker compilado y el cliente nativo de Prisma. Las dependencias del worker se incluyen en su bundle; no se copia todo `node_modules` sobre la salida standalone. La imagen de migraciones se construye por separado con la CLI de Prisma y los comandos administrativos compilados, sin el servidor Next.js ni las herramientas de desarrollo. Los comandos `npm run account:reset` y `npm run push:keys` siguen disponibles en `migrate`.
+
+Actions verifica el contenido mínimo y prueba ambas imágenes, incluidas las migraciones, HTTP y el heartbeat del worker con el sistema de archivos de solo lectura. También imprime el tamaño final en bytes. Para medirlas en un host con Docker:
+
+```sh
+docker build --target runtime -t afaire-runtime:local .
+docker build --target migrate -t afaire-migrate:local .
+docker image inspect afaire-runtime:local afaire-migrate:local --format '{{.RepoTags}}: {{.Size}} bytes'
+```
 
 ```sh
 docker compose ps

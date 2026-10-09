@@ -40,8 +40,14 @@ export async function completeTask(id: string) {
   const user = await requireUser();
   try {
     await withUserLock(user.id, async tx => {
-      await owned(tx, user.id, id);
+      const task = await owned(tx, user.id, id);
       const active = await tx.event.findMany({ where: { taskId: id, userId: user.id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
+      const fragments = await tx.event.findMany({ where: { taskId: id, userId: user.id, chunkIndex: { not: null } } });
+      if (fragments.length) {
+        const completed = await tx.event.findMany({ where: { taskId: id, userId: user.id, status: "DONE" } });
+        const accounted = [...completed, ...active].reduce((n,event) => n + (event.estimatedMinutes ?? (event.endsAt.getTime() - event.startsAt.getTime()) / 60000), 0);
+        if (accounted < task.durationMinutes) throw new DomainError("Aún quedan fragmentos sin programar. Organiza el trabajo pendiente antes de completar la tarea.");
+      }
       for (const event of active) await setEventStatus(tx, user.id, event.id, "DONE");
       await tx.task.update({ where: { id }, data: { status: "DONE" } });
     }); refresh(); return { ok: true };

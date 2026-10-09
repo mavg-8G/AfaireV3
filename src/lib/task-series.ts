@@ -29,6 +29,6 @@ export async function materializeTaskSeries(tx: Prisma.TransactionClient, userId
     const existing = await tx.task.findMany({ where: { userId, seriesId: rule.id, periodStart: { in: periods.map(p=>p.periodStart) } }, select: { periodStart:true } });
     const keys = new Set(existing.map(t=>t.periodStart!.getTime()));
     const missing = periods.filter(p=>!keys.has(p.periodStart.getTime()));
-    if (missing.length) await tx.task.createMany({ data: missing.map(period => ({ ...period, userId, seriesId: rule.id, title: rule.title, durationMinutes: rule.durationMinutes, priority: rule.priority, preferredWindow: rule.preferredWindow, energy: rule.energy })), skipDuplicates: true });
+    if (missing.length) await tx.task.createMany({ data: missing.map(period => ({ ...period, userId, seriesId: rule.id, title: rule.title, durationMinutes: rule.durationMinutes, splittable: rule.splittable, minChunk: rule.minChunk, priority: rule.priority, preferredWindow: rule.preferredWindow, energy: rule.energy })), skipDuplicates: true });
   }
 }

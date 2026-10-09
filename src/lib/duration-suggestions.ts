@@ -5,7 +5,7 @@ export const normalizedTitle = (title: string) => title.trim().toLocaleLowerCase
 export async function taskDurationSuggestions(tx: Prisma.TransactionClient, userId: string) {
   const [tasks, history] = await Promise.all([
     tx.task.findMany({ where: { userId, archived: false, status: "INBOX" } }),
-    tx.event.findMany({ where: { userId, status: "DONE", taskId: { not: null }, actualMinutes: { not: null } }, orderBy: { startsAt: "asc" }, select: { title: true, actualMinutes: true } }),
+    tx.event.findMany({ where: { userId, status: "DONE", chunkIndex: null, taskId: { not: null }, actualMinutes: { not: null } }, orderBy: { startsAt: "asc" }, select: { title: true, actualMinutes: true } }),
   ]);
   return tasks.flatMap(task => {
     const suggestion = durationSuggestion(task.durationMinutes, history.filter(e => normalizedTitle(e.title) === normalizedTitle(task.title)).map(e => e.actualMinutes!));

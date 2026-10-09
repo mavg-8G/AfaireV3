@@ -16,6 +16,9 @@ model User {
   dayStart            String   @default("08:00")
   dayEnd              String   @default("22:00")
   bufferMinutes       Int      @default(10)
+  urgencyEnabled      Boolean  @default(true)
+  urgencySoonDays     Int      @default(3)
+  urgencyNearDays     Int      @default(1)
   autoPlan            Boolean  @default(false)
   carryOver           Boolean  @default(true)
   adaptiveAvailability Boolean @default(true)
@@ -97,6 +100,8 @@ model Event {
   occurrenceId String?     @unique
   occurrence   HabitOccurrence? @relation(fields: [occurrenceId, userId], references: [id, userId], onDelete: NoAction)
   taskId       String?
+  chunkIndex   Int?
+  chunkCount   Int?
   task         Task?       @relation(fields: [taskId, userId], references: [id, userId], onDelete: NoAction)
   createdAt    DateTime    @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime    @updatedAt @db.Timestamptz(3)
@@ -146,6 +151,8 @@ model HabitOccurrence {
 }
 
 model Task {
+  splittable Boolean @default(false)
+  minChunk Int @default(30)
   categoryId String?
   category CategoryBudget? @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction)
   postponements Int @default(0)
@@ -322,6 +329,8 @@ model DayOverride {
 }
 
 model TaskSeries {
+  splittable Boolean @default(false)
+  minChunk Int @default(30)
   id String @id @default(cuid())
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

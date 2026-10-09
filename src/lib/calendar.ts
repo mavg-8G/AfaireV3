@@ -38,5 +38,15 @@ export async function setEventStatus(tx: Prisma.TransactionClient, userId: strin
   if (status === "PENDING") await assertFree(tx, userId, event.startsAt, event.endsAt, id, event.travelMinutes);
   await tx.event.update({ where: { id }, data: { status, ...(status === "IN_PROGRESS" ? { startedAt: event.startedAt ?? now, actualMinutes: null } : status === "DONE" && event.startedAt ? { actualMinutes: Math.max(1, Math.min(480, Math.round((now.getTime() - event.startedAt.getTime()) / 60_000))) } : status === "PENDING" ? { startedAt: null, actualMinutes: null } : {}) } });
   if (event.occurrenceId) await tx.habitOccurrence.updateMany({ where: { id: event.occurrenceId, userId }, data: { status: status === "CANCELLED" ? "SKIPPED" : status } });
-  if (event.taskId) await tx.task.updateMany({ where: { id: event.taskId, userId, archived: false }, data: { status: status === "DONE" || (event.status === "DONE" && status === "CANCELLED") ? "DONE" : ["CANCELLED", "SKIPPED"].includes(status) ? "INBOX" : "SCHEDULED" } });
+  if (event.taskId) {
+    const task = await tx.task.findFirst({ where: { id: event.taskId, userId, archived: false }, include: { events: { where: { status: { in: ["DONE", "PENDING", "IN_PROGRESS"] } } } } });
+    if (task) {
+      const active = task.events.some(e => e.status !== "DONE");
+      const completed = task.events.filter(e => e.status === "DONE");
+      const minutes = completed.reduce((total,e) => total + (e.estimatedMinutes ?? (e.endsAt.getTime() - e.startsAt.getTime()) / 60000), 0);
+      const fragmented = task.splittable || event.chunkIndex != null || task.events.some(e => e.chunkIndex != null);
+      const done = !active && (fragmented ? minutes >= task.durationMinutes : completed.length > 0 || event.status === "DONE" && status === "CANCELLED");
+      await tx.task.update({ where: { id: task.id }, data: { status: done ? "DONE" : active ? "SCHEDULED" : "INBOX" } });
+    }
+  }
 }

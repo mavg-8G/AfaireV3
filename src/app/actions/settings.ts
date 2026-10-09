@@ -16,6 +16,7 @@ export async function updateSettings(formData: FormData): Promise<ActionResult> 
     ...Object.fromEntries(formData), availability,
     autoPlan: formData.get("autoPlan") === "on", carryOver: formData.get("carryOver") === "on",
     adaptiveDurations: formData.get("adaptiveDurations") === "on",
+    urgencyEnabled: formData.get("urgencyEnabled") === "on",
     adaptiveAvailability: formData.get("adaptiveAvailability") === "on",
   });
   if (!parsed.success) return { error: "Revisa horarios y zona horaria. Cada hora final debe ser posterior al inicio." };

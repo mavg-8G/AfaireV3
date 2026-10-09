@@ -34,7 +34,12 @@ jobs:
       - run: npm ci
       - run: npm run db:generate && npm run db:migrate
       - run: npm run typecheck && npm run lint && npm test && npm run test:integration
-      - run: npm run build && npm run worker:build
+      - run: npm run build && npm run worker:build && npm run admin:build
+      - name: Verify minimal runtime dependencies
+        run: |
+          mkdir -p .next/standalone/dist
+          cp dist/worker.cjs .next/standalone/dist/
+          node scripts/verify-container-runtime.mjs .next/standalone
       - name: Verify production HTTP and shell syntax
         run: |
           for script in scripts/*.sh; do sh -n "$script"; done
@@ -47,6 +52,23 @@ jobs:
             sleep 1
           done
           npm run test:web
+      - name: Build and smoke-test reduced Docker images
+        run: |
+          docker build --target runtime -t afaire-runtime:test .
+          docker build --target migrate -t afaire-migrate:test .
+          docker run --rm --network host -e DATABASE_URL afaire-migrate:test
+          docker run --rm afaire-migrate:test npm run push:keys > /tmp/afaire-vapid-test.txt
+          docker run --rm --network host -e DATABASE_URL afaire-runtime:test node -e 'const p=new (require("@prisma/client").PrismaClient)(); p.user.count().then(()=>p.workerHeartbeat.deleteMany()).then(()=>console.log("Prisma query OK")).finally(()=>p.$disconnect())'
+          trap 'docker logs afaire-runtime-test; docker logs afaire-worker-test; docker rm -f afaire-runtime-test afaire-worker-test' EXIT
+          docker run -d --name afaire-runtime-test --network host --read-only --tmpfs /tmp --tmpfs /app/.next/cache:uid=1000,gid=1000,mode=0700 -e DATABASE_URL -e AUTH_SECRET -e NEXTAUTH_URL=http://localhost:3001 -e REGISTRATION_MODE -e TRUST_PROXY -e PORT=3001 afaire-runtime:test
+          docker run -d --name afaire-worker-test --network host --read-only --tmpfs /tmp -e DATABASE_URL -e AUTH_SECRET -e NEXTAUTH_URL -e REGISTRATION_MODE -e TRUST_PROXY afaire-runtime:test node dist/worker.cjs
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3001/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          TEST_BASE_URL=http://127.0.0.1:3001 npm run test:web
+          docker exec afaire-worker-test node -e 'const p=new (require("@prisma/client").PrismaClient)(); p.workerHeartbeat.findUnique({where:{id:"daily-planner"}}).then(h=>{if(!h||Date.now()-h.updatedAt.getTime()>60000)process.exitCode=1}).finally(()=>p.$disconnect())'
+          docker image inspect afaire-runtime:test afaire-migrate:test --format '{{.RepoTags}}: {{.Size}} bytes'
   publish:
     needs: checks
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
