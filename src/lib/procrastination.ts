@@ -1,4 +1,4 @@
-import type { Event, Prisma } from "@prisma/client";
+import type { Event, Prisma } from "../generated/prisma/client";
 import { z } from "zod";
 import { DomainError } from "./transaction";
 export async function recordPostponement(tx: Prisma.TransactionClient, event: Event, now: Date) {

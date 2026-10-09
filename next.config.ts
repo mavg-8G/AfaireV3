@@ -5,9 +5,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingIncludes: {
     "/*": [
-      "node_modules/@prisma/client/default.js",
-      "node_modules/@prisma/client/runtime/library.js",
-      "node_modules/.prisma/client/{default.js,index.js,package.json,schema.prisma,libquery_engine-*.so.node,query_engine-*.dll.node}",
+      "node_modules/@prisma/client/runtime/{client.js,query_compiler_fast_bg.postgresql.*}",
+      // The bundled worker and admin health check load the adapter through CommonJS.
+      "node_modules/@prisma/{adapter-pg,driver-adapter-utils,debug}/**/*",
+      "node_modules/{pg,pg-*,pgpass,postgres-*,split2,xtend}/**/*",
     ],
   },
   poweredByHeader: false,

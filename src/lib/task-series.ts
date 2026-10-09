@@ -1,5 +1,5 @@
 import { addLocalDays, dateOnly } from "./time";
-import type { Prisma, TaskSeries } from "@prisma/client";
+import type { Prisma, TaskSeries } from "../generated/prisma/client";
 export function taskPeriods(series: Pick<TaskSeries, "frequency" | "anchorDate" | "windowDays">, from: string, until: string) {
   const anchor = series.anchorDate.toISOString().slice(0, 10);
   const dates: string[] = [];

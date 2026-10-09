@@ -5,7 +5,7 @@ import { dateOnly, calendarDayBounds, roundUp, ymdInZone } from "./time";
 import { generateDayInTransaction } from "./planner";
 import { captureAgenda, stateHash } from "./plan-history";
 import { DomainError, withUserLock } from "./transaction";
-import type { Event, Prisma } from "@prisma/client";
+import type { Event, Prisma } from "../generated/prisma/client";
 const TokenSchema = z.object({ userId: z.string(), day: DateSchema, taskId: z.uuid(), inputHash: z.string().length(64), state: z.string().length(64), anchor: z.string().datetime(), expires: z.number() });
 type Token = z.infer<typeof TokenSchema>;
 function secret() { if (!process.env.AUTH_SECRET) throw new DomainError("La vista previa requiere configurar el servidor."); return process.env.AUTH_SECRET; }

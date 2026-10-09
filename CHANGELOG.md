@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## 3.0.0 · 2026-10-09
+
+- Versión 3.0.0 en el paquete, lockfile, documentación y pie de página en español e inglés.
+- Prisma 7.10.0 con cliente generado en `src/generated/prisma`, adaptador PostgreSQL y configuración del CLI en `prisma.config.ts`; las migraciones SQL existentes se conservan.
+- TypeScript 7.0.2 para comprobar tipos, con la API compatible de TypeScript 6.0.2 para ESLint y Next.js. ESLint 10.12.0 con la capa oficial de compatibilidad de plugins.
+- Actualizaciones de date-fns 4.4.0, dotenv 18.0.7, esbuild 0.28.2, fast-check 4.10.2, tsx 4.23.15 y tipos de Node 26.6.5. Se conservan las versiones de los demás paquetes que ya estaban actualizadas.
+- Docker sobre Node 26 Alpine; empaquetado del cliente PostgreSQL para el worker, comandos administrativos y healthchecks. Comprobación del compilador WASM y de los comandos con solo las dependencias de producción.
+- Corrección de los actualizadores para validar una única imagen por servicio cuando Compose incluye también las dependencias.
+- `mysql2` transitivo del CLI de Prisma fijado a 3.24.5 para corregir los avisos detectados en la auditoría. Auditoría de producción sin vulnerabilidades conocidas; persiste el aviso de desarrollo en `braces`, sin parche publicado.
+- Validación local: 110 pruebas unitarias, 83 de integración, 44 comprobaciones HTTP y 14 casos de actualización; tipos, ESLint, build y paquetes de producción correctos. Construcción Docker pendiente de GitHub Actions.
+
 ## 2026-10-09 · Transparencia y aprendizaje
 
 - Vista previa antes/después al capturar tareas, con confirmación atómica y protección frente a agenda cambiada, caducidad y reenvíos.

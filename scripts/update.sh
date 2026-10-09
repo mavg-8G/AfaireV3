@@ -17,8 +17,15 @@ export AFAIRE_VERSION
 docker compose config --quiet
 # Download first: a failed pull leaves the current services running.
 docker compose pull afaire-web worker migrate
+resolved_config=$(docker compose config)
 for service in afaire-web worker migrate; do
-    image=$(docker compose config --images "$service")
+    # config --images SERVICE also includes dependency images; select by service name.
+    image=$(printf '%s\n' "$resolved_config" | awk -v service="$service" '
+        /^[^ ]/ { in_services=($0 == "services:"); selected=0 }
+        in_services && /^  [^ ]/ { selected=($0 == "  " service ":") }
+        selected && /^    image: / { print $2 }
+    ')
+    case "$image" in ''|*[[:space:]]*) echo "No se pudo resolver una única imagen para $service." >&2; exit 1;; esac
     revision=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")
     test "$revision" = "$AFAIRE_VERSION" || { echo "Imagen incompatible: $service" >&2; exit 1; }
 done

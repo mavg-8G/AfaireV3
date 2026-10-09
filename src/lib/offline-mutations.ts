@@ -3,7 +3,7 @@ import { z } from "zod";
 import { EventFormSchema, TimezoneSchema } from "./definitions";
 import { ownedEvent, parseEvent, assertFree, setEventStatus } from "./calendar";
 import { DomainError } from "./transaction";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 
 export const OFFLINE_MAX_AGE_MS = 7 * 86400_000;
 const common = {

@@ -3,7 +3,7 @@ import { displayClock } from "@/lib/locale";
 import { useI18n } from "@/components/LocaleProvider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { DayOverride } from "@prisma/client";
+import type { DayOverride } from "../generated/prisma/client";
 import { saveException, removeException, applyWeekTemplate } from "@/app/actions/planning-options";
 import { WEEK_TEMPLATES } from "@/lib/templates";
 import { ActionButton } from "./ActionButton";

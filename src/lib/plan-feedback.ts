@@ -1,4 +1,4 @@
-import type { PlanFeedback, Prisma, PreferredWindow } from "@prisma/client";
+import type { PlanFeedback, Prisma, PreferredWindow } from "../generated/prisma/client";
 import { calendarDayBounds, dateOnly, addLocalDays, ymdInZone } from "./time";
 import { DomainError } from "./transaction";
 import { ownedEvent, setEventStatus } from "./calendar";

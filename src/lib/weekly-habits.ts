@@ -1,4 +1,4 @@
-import type { Habit, Prisma, User, Availability } from "@prisma/client";
+import type { Habit, Prisma, User, Availability } from "../generated/prisma/client";
 import { availabilityWindows } from "./availability";
 import { startOfLocalWeek, addLocalDays, dateOnly, calendarDayBounds, preferredBounds, roundUp } from "./time";
 import { freeMinutes, habitToSchedulable, scheduleInWindows } from "./scheduler";

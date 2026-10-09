@@ -3,7 +3,7 @@ import { displayTime } from "@/lib/locale";
 import { useI18n } from "@/components/LocaleProvider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Event } from "@prisma/client";
+import type { Event } from "../generated/prisma/client";
 export function NowBanner({ events, timezone, now: initial }: { events: Event[]; timezone: string; now: Date }) {
   const { t, preferences } = useI18n();
   const [now, setNow] = useState(initial); const router = useRouter();

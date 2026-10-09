@@ -1,5 +1,5 @@
 import { translator } from "./locale";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { TASK_BUNDLES, WEEK_TEMPLATES } from "./templates";
 import { addLocalDays, dateOnly, weekdayForDate, ymdInZone } from "./time";
 import { DateSchema } from "./definitions";

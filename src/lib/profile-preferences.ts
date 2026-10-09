@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { PreferencesSchema, type Preferences } from "./locale";
 import { clearPendingHabitBlocks } from "./weekly-habits";
 export async function updateRegionalPreferences(tx: Prisma.TransactionClient, userId: string, input: Preferences, now = new Date()) {

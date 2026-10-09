@@ -6,6 +6,7 @@ fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
 mkdir -p "$fixture/scripts" "$fixture/bin"
 cp "$root/scripts/update.sh" "$fixture/scripts/update.sh"
+cp "$root/tests/fixtures/update-compose.yml" "$fixture/resolved-compose.yml"
 printf '#!/bin/sh\necho backup >> "$UPDATE_LOG"\n' > "$fixture/scripts/backup.sh"
 cat > "$fixture/bin/git" <<'MOCK'
 #!/bin/sh
@@ -19,10 +20,16 @@ cat > "$fixture/bin/docker" <<'MOCK'
 echo "$*" >> "$UPDATE_LOG"
 case "$*" in
  'compose pull '*) test "$UPDATE_CASE" != pull-failure;;
- 'image inspect '*) echo 1111111111111111111111111111111111111111;;
+ 'compose config')
+   test "$UPDATE_CASE" != config-failure || exit 1
+   if test "$UPDATE_CASE" = missing-image; then sed '/^    image: ghcr/d' resolved-compose.yml; else cat resolved-compose.yml; fi;;
+ 'image inspect '*)
+   test "$#" -eq 5 || exit 1
+   case "$5" in ghcr.io/example/afaire:test|ghcr.io/example/afaire-migrate:test) ;; *) echo 'Error response from daemon: page not found' >&2; exit 1;; esac
+   if test "$UPDATE_CASE" = revision-failure; then echo wrong; else echo 1111111111111111111111111111111111111111; fi;;
  'inspect '*) echo postgres:18.4-bookworm;;
  'compose config --images db') echo postgres:18.4-bookworm;;
- 'compose config --images '*) echo ghcr.io/example/image:test;;
+ 'compose config --images '*) printf 'postgres:18.4-bookworm\nghcr.io/example/afaire-migrate:test\nghcr.io/example/afaire:test\n';;
  'compose ps -a -q db') echo test-db;;
  'compose run '*) test "$UPDATE_CASE" != migrate-failure;;
  *) exit 0;;
@@ -35,7 +42,7 @@ PATH="$fixture/bin:$PATH"
 export PATH
 UPDATE_LOG="$fixture/log"
 export UPDATE_LOG
-for UPDATE_CASE in success pull-failure migrate-failure; do
+for UPDATE_CASE in success pull-failure config-failure missing-image revision-failure migrate-failure; do
     export UPDATE_CASE
     printf 'AUTH_SECRET=fixture-secret\nAFAIRE_VERSION=old\n' > "$fixture/.env"
     : > "$UPDATE_LOG"
@@ -46,7 +53,7 @@ for UPDATE_CASE in success pull-failure migrate-failure; do
         grep -q '^AUTH_SECRET=fixture-secret$' "$fixture/.env"
         grep -q '^AFAIRE_VERSION=1111111111111111111111111111111111111111$' "$fixture/.env"
         grep -q '^backup$' "$UPDATE_LOG";;
-      pull-failure)
+      pull-failure|config-failure|missing-image|revision-failure)
         test "$result" != 0
         ! grep -q '^compose stop' "$UPDATE_LOG"
         grep -q '^AFAIRE_VERSION=old$' "$fixture/.env";;

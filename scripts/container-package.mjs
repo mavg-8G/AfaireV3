@@ -11,6 +11,9 @@ const manifest = {
   overrides: original.overrides,
   dependencies: {
     "@prisma/client": original.dependencies["@prisma/client"],
+    "@prisma/adapter-pg": original.dependencies["@prisma/adapter-pg"],
+    pg: original.dependencies.pg,
+    dotenv: original.dependencies.dotenv,
     prisma: original.devDependencies.prisma,
   },
   scripts: {

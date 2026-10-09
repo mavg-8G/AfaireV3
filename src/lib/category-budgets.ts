@@ -1,4 +1,4 @@
-import type { CategoryBudget, Event, Prisma } from "@prisma/client";
+import type { CategoryBudget, Event, Prisma } from "../generated/prisma/client";
 import { availabilityWindows } from "./availability";
 import { addLocalDays, calendarDayBounds, dateOnly, roundUp, startOfLocalWeek, ymdInZone } from "./time";
 import { freeMinutes, type Schedulable } from "./scheduler";

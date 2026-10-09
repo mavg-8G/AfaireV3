@@ -52,6 +52,8 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
   worker:
     image: ${AFAIRE_IMAGE:-ghcr.io/mavg-8g/afairev3}:${AFAIRE_VERSION:?Define AFAIRE_VERSION}
+    healthcheck:
+      test: ["CMD", "node", "-e", "const p=require('node:fs').existsSync('dist/prisma-client.cjs')?require('./dist/prisma-client.cjs').createPrismaClient():new (require('@prisma/client').PrismaClient)();p.workerHeartbeat.findUnique({where:{id:'daily-planner'}}).then(h=>{if(!h||Date.now()-h.updatedAt.getTime()>300000)process.exitCode=1}).catch(()=>process.exitCode=1).finally(()=>p.$$disconnect())"]
     environment:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
@@ -74,8 +76,15 @@ for service in db afaire-web worker migrate; do
 done
 # Pull and verify all images before affecting the running installation.
 compose pull afaire-web worker migrate
+resolved_config=$(compose config)
 for service in afaire-web worker migrate; do
-    image=$(compose config --images "$service")
+    # config --images SERVICE also includes dependency images; select by service name.
+    image=$(printf '%s\n' "$resolved_config" | awk -v service="$service" '
+        /^[^ ]/ { in_services=($0 == "services:"); selected=0 }
+        in_services && /^  [^ ]/ { selected=($0 == "  " service ":") }
+        selected && /^    image: / { print $2 }
+    ')
+    case "$image" in ''|*[[:space:]]*) echo "No se pudo resolver una única imagen para $service." >&2; exit 1;; esac
     revision=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")
     test "$revision" = "$version" || { echo "Imagen incompatible: $service" >&2; exit 1; }
 done

@@ -1,5 +1,5 @@
 import { feedbackPolicy } from "./plan-feedback";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { availabilityWindows } from "./availability";
 import { startOfLocalWeek, addLocalDays, calendarDayBounds, dateOnly, roundUp, weekdayForDate, ymdInZone } from "./time";
 import { computeGaps, type Gap } from "./scheduler";

@@ -1,4 +1,4 @@
-import type { Habit, PreferredWindow, Task } from "@prisma/client";
+import type { Habit, PreferredWindow, Task } from "../generated/prisma/client";
 import { addMinutesUtc } from "./time";
 
 export type Gap = { start: Date; end: Date };

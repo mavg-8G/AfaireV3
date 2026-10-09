@@ -1,4 +1,4 @@
-import type { Availability, DayOverride } from "@prisma/client";
+import type { Availability, DayOverride } from "../generated/prisma/client";
 import { calendarDayBounds, combineLocalDateTime, weekdayForDate } from "./time";
 import type { Gap } from "./scheduler";
 

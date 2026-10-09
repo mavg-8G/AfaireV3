@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { Event, PlanFeedback } from "@prisma/client";
+import type { Event, PlanFeedback } from "../src/generated/prisma/client";
 import { stateHash } from "../src/lib/plan-history";
 import { feedbackPolicy, feedbackDuration } from "../src/lib/plan-feedback";
 import { scheduleInWindows, type Schedulable } from "../src/lib/scheduler";

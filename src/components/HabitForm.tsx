@@ -2,7 +2,7 @@
 import { orderedWeekdays, weekdayLabel } from "@/lib/locale";
 import { useI18n } from "@/components/LocaleProvider";
 import { useState } from "react";
-import type { Habit, CategoryBudget } from "@prisma/client";
+import type { Habit, CategoryBudget } from "../generated/prisma/client";
 import { createHabit, updateHabit } from "@/app/actions/habits";
 import { WINDOW_LABELS } from "@/lib/definitions";
 export function HabitForm({ habit, categories = [] }: { habit?: Habit; categories?: Pick<CategoryBudget,"id"|"name"|"active">[] }) {

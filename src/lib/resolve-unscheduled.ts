@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { DateSchema } from "./definitions";
 import { generateDayInTransaction, type Unscheduled } from "./planner";
 import { setEventStatus } from "./calendar";

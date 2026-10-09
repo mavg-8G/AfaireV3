@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import type { CategoryBudget } from "@prisma/client";
+import type { CategoryBudget } from "../generated/prisma/client";
 import { saveCategoryBudget, toggleCategoryBudget } from "@/app/actions/transparency";
 import { useI18n } from "./LocaleProvider";
 import { ActionButton } from "./ActionButton";

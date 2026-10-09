@@ -1,4 +1,4 @@
-import type { Prisma, EventSeries } from "@prisma/client";
+import type { Prisma, EventSeries } from "../generated/prisma/client";
 import { addLocalDays, dateOnly } from "./time";
 import { assertFree, ownedEvent } from "./calendar";
 import { DomainError } from "./transaction";

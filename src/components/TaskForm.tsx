@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from "@/components/LocaleProvider";
 import { useId, useRef, useState } from "react";
-import type { CategoryBudget, Task } from "@prisma/client";
+import type { CategoryBudget, Task } from "../generated/prisma/client";
 import { createTask, updateTask } from "@/app/actions/tasks";
 import { previewTask, applyTaskPreview } from "@/app/actions/transparency";
 import type { TaskPreview } from "@/lib/task-preview";

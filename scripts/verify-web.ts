@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { ymdInZone, addLocalDays, dateOnly } from "../src/lib/time";
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/lib/prisma-client";
 const base = new URL(process.env.TEST_BASE_URL ?? "http://127.0.0.1:3000");
 if (!["127.0.0.1", "localhost", "[::1]"].includes(base.hostname)) throw new Error("Esta comprobación crea cuentas temporales y solo admite un servidor local de pruebas.");
-const prisma = new PrismaClient(); const ids: string[] = []; let checks = 0;
+const prisma = createPrismaClient(); const ids: string[] = []; let checks = 0;
 function check(message: string, assertion: () => void) { assertion(); checks++; console.log(`✓ ${message}`); }
 function collectCookies(response: Response, jar: Map<string, string>) {
   for (const cookie of response.headers.getSetCookie()) { const pair = cookie.split(";")[0]; const split = pair.indexOf("="); jar.set(pair.slice(0, split), pair.slice(split + 1)); }

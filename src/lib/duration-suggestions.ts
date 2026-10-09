@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { durationSuggestion } from "./insights";
 import { DomainError } from "./transaction";
 import { taskMeasurements } from "./duration-learning";

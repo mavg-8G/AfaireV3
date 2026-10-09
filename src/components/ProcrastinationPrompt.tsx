@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import type { Task } from "@prisma/client";
+import type { Task } from "../generated/prisma/client";
 import { adjustPostponedTask } from "@/app/actions/transparency";
 import { useI18n } from "./LocaleProvider";
 export function ProcrastinationPrompt({task}:{task:Task}) {

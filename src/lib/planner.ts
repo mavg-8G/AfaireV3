@@ -4,7 +4,7 @@ import { feedbackPolicy, feedbackDuration } from "./plan-feedback";
 import { categoryTargets, categoryFillItems } from "./category-budgets";
 import { materializeTaskSeries } from "./task-series";
 import { weeklyHabitDue } from "./weekly-habits";
-import { Prisma, type Event } from "@prisma/client";
+import { Prisma, type Event } from "../generated/prisma/client";
 import { adjustedDuration, durationEvidence, learnedFocus } from "./insights";
 import { validDurationMeasurements, taskMeasurements } from "./duration-learning";
 import { prisma } from "./prisma";

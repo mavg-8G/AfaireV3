@@ -7,7 +7,7 @@ import { DateSchema } from "@/lib/definitions";
 import { addLocalDays, dateOnly, formatTime, ymdInZone } from "@/lib/time";
 import { insertSeries, replaceFollowingSeries } from "@/lib/series";
 import { assertFree, ownedEvent, parseEvent, setEventStatus } from "@/lib/calendar";
-import type { EventStatus } from "@prisma/client";
+import type { EventStatus } from "../../generated/prisma/client";
 import type { ActionResult } from "@/lib/definitions";
 
 function refresh() { revalidatePath("/"); revalidatePath("/week"); revalidatePath("/inbox"); revalidatePath("/review"); revalidatePath("/habits"); }

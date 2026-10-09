@@ -1,4 +1,4 @@
-import type { Prisma, EventStatus } from "@prisma/client";
+import type { Prisma, EventStatus } from "../generated/prisma/client";
 import { recordPostponement } from "./procrastination";
 import { DomainError } from "./transaction";
 import { combineLocalDateTime, dateOnly } from "./time";

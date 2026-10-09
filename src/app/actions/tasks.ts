@@ -6,7 +6,7 @@ import { withUserLock, actionError, DomainError } from "@/lib/transaction";
 import { setEventStatus } from "@/lib/calendar";
 import { parseTaskInput, assertCategory } from "@/lib/task-preview";
 import { applyTaskDurationSuggestion } from "@/lib/duration-suggestions";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../../generated/prisma/client";
 
 const parse = parseTaskInput;
 function refresh() { revalidatePath("/inbox"); revalidatePath("/"); revalidatePath("/week"); revalidatePath("/review"); }

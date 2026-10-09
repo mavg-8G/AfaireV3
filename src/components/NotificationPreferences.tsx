@@ -2,7 +2,7 @@
 import { useI18n } from "@/components/LocaleProvider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { NotificationSettings } from "@prisma/client";
+import type { NotificationSettings } from "../generated/prisma/client";
 import { addPushSubscription, removePushSubscription, removeAllPushSubscriptions, saveNotificationSettings } from "@/app/actions/notifications";
 import { ActionButton } from "./ActionButton";
 export function NotificationPreferences({ settings, publicKey, devices }: { settings: NotificationSettings | null; publicKey: string | null; devices: number }) {

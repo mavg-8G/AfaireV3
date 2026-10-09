@@ -1,0 +1,15 @@
+name: afaire
+services:
+  migrate:
+    image: ghcr.io/example/afaire-migrate:test
+  worker:
+    image: ghcr.io/example/afaire:test
+  db:
+    image: postgres:18.4-bookworm
+  afaire-web:
+    environment:
+      image: this-is-not-the-service-image
+    image: ghcr.io/example/afaire:test
+networks:
+  afaire-web:
+    image: this-is-not-a-service

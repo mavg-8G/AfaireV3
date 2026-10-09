@@ -2,7 +2,7 @@
 
 Guía de pruebas de agenda, avisos, capacidad del planificador y sesiones: consulta [TESTING.md](TESTING.md).
 
-Versión 2.0.0. Apariencia clara, nocturna o automática según el sistema, con selección guardada por navegador. El selector Tema está disponible en la cabecera y al iniciar sesión. La vista sin conexión sigue el tema del sistema.
+Versión 3.0.0. Apariencia clara, nocturna o automática según el sistema, con selección guardada por navegador. El selector Tema está disponible en la cabecera y al iniciar sesión. La vista sin conexión sigue el tema del sistema.
 
 Planificador diario para varias personas. Cada cuenta tiene su agenda privada: citas fijas, hábitos, tareas pendientes y planificación automática en los huecos disponibles.
 
@@ -49,7 +49,9 @@ Se guardan únicamente fecha local, franja, zona y momento de observación, dura
 
 ## Stack
 
-Next.js 16.4 App Router, React 19, TypeScript, Tailwind 4, PostgreSQL y Prisma 6.19.3. Auth.js/NextAuth 4.24.15 gestiona las sesiones JWT en cookies. La versión estable de Prisma se fijó para mantener cliente, esquema y migraciones compatibles; no se utiliza la versión preliminar que había inicialmente.
+Next.js 16.4 App Router, React 19, TypeScript 7, Tailwind 4, PostgreSQL y Prisma 7.10.0 con `@prisma/adapter-pg`. Auth.js/NextAuth 4.24.15 gestiona las sesiones JWT en cookies. El cliente Prisma se genera en `src/generated/prisma`; `prisma.config.ts` configura el esquema, las migraciones y la conexión del CLI. Las imágenes usan Node 26 Alpine.
+
+TypeScript 7 se instala como `@typescript/native` y proporciona `tsc`; la API de TypeScript 6 se mantiene bajo el alias `typescript` para los plugins de ESLint y Next.js, según la configuración de coexistencia recomendada por Microsoft. ESLint 10 usa `@eslint/compat` para los plugins de Next.js que todavía emplean la API anterior. Se requiere Node.js 22.13 o posterior.
 
 Instantes en UTC y PostgreSQL `timestamptz`; fechas del plan en el calendario local. El código rechaza horas inexistentes o ambiguas durante cambios de horario de verano y pide elegir una hora fuera de ese intervalo.
 

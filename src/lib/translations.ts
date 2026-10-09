@@ -206,7 +206,7 @@ export const english: Record<string, string> = {
   "Activo": "Active",
   "Actual": "Current",
   "Afaire observa cuándo abres o utilizas la agenda, incluida la madrugada. Las franjas repetidas en tres fechas distintas ayudan a ajustar el horario. Afinar o desactivar días requiere al menos tres semanas de uso frecuente. Se guardan solo fecha y franja horaria durante 28 días.": "Afaire learns when you use your planner, including overnight. Time slots repeated on three separate dates help adjust your schedule. Refining or disabling days requires at least three weeks of regular use. Only dates and time slots are stored, for 28 days.",
-  "Afaire v2 · un día a la vez": "Afaire v2 · one day at a time",
+  "Afaire v3 · un día a la vez": "Afaire v3 · one day at a time",
   "Ahora": "Now",
   "Ajustar duraciones con los tiempos reales": "Adjust durations using actual time",
   "Ajustar preferencias →": "Adjust preferences →",

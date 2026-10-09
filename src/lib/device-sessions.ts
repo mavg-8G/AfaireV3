@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { prisma } from "./prisma";
 import { DomainError, withUserLock } from "./transaction";
 export const SESSION_LIFETIME_MS = 7 * 86400_000;

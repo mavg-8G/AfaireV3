@@ -6,7 +6,7 @@ import { useI18n } from "@/components/LocaleProvider";
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Availability } from "@prisma/client";
+import type { Availability } from "../generated/prisma/client";
 import { changePassword } from "@/app/actions/auth";
 import { updateSettings, resetLearning } from "@/app/actions/settings";
 import { COMMON_TIMEZONES, type AuthFormState } from "@/lib/definitions";

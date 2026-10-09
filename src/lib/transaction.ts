@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "../generated/prisma/client";
 import { prisma } from "./prisma";
 
 export class DomainError extends Error {}

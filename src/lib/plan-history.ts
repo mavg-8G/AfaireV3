@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Prisma, type Event } from "@prisma/client";
+import { Prisma, type Event } from "../generated/prisma/client";
 import { dateOnly } from "./time";
 import { DomainError, withUserLock } from "./transaction";
 

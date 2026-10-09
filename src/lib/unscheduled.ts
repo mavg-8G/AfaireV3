@@ -1,4 +1,4 @@
-import type { Event } from "@prisma/client";
+import type { Event } from "../generated/prisma/client";
 import { freeMinutes, scheduleInWindows, type Gap, type Schedulable, type SchedulingPolicy } from "./scheduler";
 import { addLocalDays } from "./time";
 

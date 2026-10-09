@@ -2,7 +2,7 @@
 import { useI18n } from "@/components/LocaleProvider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { TaskSeries } from "@prisma/client";
+import type { TaskSeries } from "../generated/prisma/client";
 import { createFlexibleSeries,stopFlexibleSeries,applyTaskBundle } from "@/app/actions/planning-options";
 import { TASK_BUNDLES } from "@/lib/templates";
 import { ActionButton } from "./ActionButton";

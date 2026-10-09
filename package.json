@@ -1,6 +1,6 @@
 {
   "name": "afaire",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,18 +17,19 @@
     "db:dev": "prisma migrate dev",
     "db:local": "tsx scripts/local-db.ts",
     "worker": "tsx scripts/worker.ts",
-    "worker:build": "esbuild scripts/worker.ts --bundle --platform=node --external:@prisma/client --format=cjs --minify --outfile=dist/worker.cjs",
-    "admin:build": "esbuild scripts/reset-password.ts scripts/generate-push-keys.mjs --bundle --platform=node --external:@prisma/client --format=cjs --minify --outdir=dist/admin --out-extension:.js=.cjs",
+    "worker:build": "esbuild scripts/worker.ts src/lib/prisma-client.ts --bundle --platform=node --external:@prisma/client --external:@prisma/adapter-pg --external:pg --format=cjs --minify --entry-names=[name] --outdir=dist --out-extension:.js=.cjs",
+    "admin:build": "esbuild scripts/reset-password.ts scripts/generate-push-keys.mjs --bundle --platform=node --external:@prisma/client --external:@prisma/adapter-pg --external:pg --format=cjs --minify --outdir=dist/admin --out-extension:.js=.cjs",
     "account:reset": "tsx scripts/reset-password.ts",
     "push:keys": "node scripts/generate-push-keys.mjs",
     "push:setup": "node scripts/setup-push.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",
-    "@prisma/client": "6.19.3",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
     "bcryptjs": "3.0.3",
-    "date-fns": "4.1.0",
-    "dotenv": "17.2.3",
+    "date-fns": "4.4.0",
+    "dotenv": "18.0.7",
     "next": "16.4.0",
     "next-auth": "4.24.15",
     "pg": "8.23.1",
@@ -39,26 +40,30 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@eslint/compat": "2.1.1",
     "@tailwindcss/postcss": "4.3.3",
-    "@types/node": "^20",
+    "@types/node": "26.6.5",
     "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "3.6.4",
+    "@typescript/native": "npm:typescript@7.0.2",
     "embedded-postgres": "18.4.0-beta.17",
-    "esbuild": "0.25.12",
-    "eslint": "^9",
+    "esbuild": "0.28.2",
+    "eslint": "10.12.0",
     "eslint-config-next": "16.4.0",
-    "fast-check": "3.23.2",
-    "prisma": "6.19.3",
+    "fast-check": "4.10.2",
+    "prisma": "7.10.0",
     "tailwindcss": "^4",
-    "tsx": "4.20.6",
-    "typescript": "^5"
+    "tsx": "4.23.15",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.13.0"
   },
   "overrides": {
-    "deepmerge-ts": "8.0.2"
+    "deepmerge-ts": "8.0.2",
+    "eslint": "$eslint",
+    "mysql2": "3.24.5"
   }
 }

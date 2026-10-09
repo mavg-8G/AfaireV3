@@ -1,6 +1,6 @@
 # Pruebas locales de agenda y avisos
 
-Guía para verificar las funcionalidades del repositorio en un entorno local. La versión del paquete sigue siendo 2.0.0. Publicar el código en GitHub no actualiza el VPS: ese despliegue se realiza por separado.
+Guía para verificar las funcionalidades del repositorio en un entorno local. La versión del paquete sigue siendo 3.0.0. Publicar el código en GitHub no actualiza el VPS: ese despliegue se realiza por separado.
 
 ## Arranque
 

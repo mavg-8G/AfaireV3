@@ -75,9 +75,17 @@ Compose espera a que PostgreSQL esté disponible, ejecuta `prisma migrate deploy
 
 Las imágenes se construyen en GitHub Actions mediante el `Dockerfile`. El VPS utiliza las imágenes publicadas en GHCR y tu proxy Docker existente.
 
+Todas las etapas del Dockerfile usan `node:26-alpine`, con OpenSSL y certificados CA para Prisma Migrate. Prisma 7 utiliza el adaptador PostgreSQL y un compilador de consultas WASM, sin el antiguo motor nativo del cliente. El paquete incluye `dist/prisma-client.cjs` para las comprobaciones Docker y los comandos administrativos; la imagen de migraciones incluye `prisma.config.ts`. GitHub Actions construye y comprueba las imágenes de aplicación y migraciones antes de publicarlas; el cambio requiere publicar un nuevo SHA para que el VPS lo reciba.
+
 ## Instalación existente sin checkout Git
 
 Si el servidor solo contiene `.env` y `docker-compose.yml`, usa `ops/update-standalone.sh` colocado en esa misma carpeta y ejecútalo con `sudo sh ./update-standalone.sh SHA_COMPLETO_PUBLICADO`. No necesita permiso ejecutable. El actualizador conserva el Compose original y sus volúmenes, valida las imágenes antes de detener servicios, respalda PostgreSQL y aplica migraciones. Guarda la versión y `COMPOSE_FILE` en `.env`, y añade `docker-compose.update.yml` con las imágenes y la configuración push. La versión debe tener imágenes publicadas en GHCR. Requiere los servicios `db`, `afaire-web`, `worker` y `migrate` y Docker Compose v2.
+
+### Error `page not found` después de descargar las imágenes
+
+Los actualizadores antiguos usaban `docker compose config --images "$service"` como si devolviera una sola imagen. Compose incluye también las imágenes de las dependencias, por lo que el siguiente `docker image inspect` recibía varias referencias unidas por saltos de línea y podía fallar con `Error response from daemon: page not found`. El actualizador corregido selecciona `services.<nombre>.image` de la configuración resuelta y valida una sola referencia.
+
+En una instalación sin Git, reemplaza el script del VPS (aunque lo hayas llamado `update-install.sh`) por `ops/update-standalone.sh` de este proyecto y vuelve a ejecutar el mismo SHA publicado. Esta corrección solo cambia el script; no requiere reconstruir las imágenes. Ese fallo de validación sucede antes de detener web/worker y antes de aplicar migraciones.
 
 ## Configurar Web Push
 
