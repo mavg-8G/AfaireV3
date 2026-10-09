@@ -150,3 +150,7 @@ input[type="checkbox"] { min-width: 1.25rem; min-height: 1.25rem; }
 #main-content { scroll-margin-top: 9rem; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; } }
 @media (forced-colors: active) { .field, button, select, summary { border: 1px solid ButtonText; } :focus-visible { outline-color: Highlight; } }
+
+.account-menu > summary { list-style: none; padding: 0; }
+.account-menu > summary::-webkit-details-marker { display: none; }
+#sessions { scroll-margin-top: 9rem; }

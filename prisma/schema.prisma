@@ -42,6 +42,10 @@ model User {
   dayOverrides DayOverride[]
   taskSeries TaskSeries[]
   templateUses TemplateUse[]
+  categoryBudgets CategoryBudget[]
+  planRevisions PlanRevision[]
+  planFeedback PlanFeedback[]
+  dayCheckIns DayCheckIn[]
   deviceSessions DeviceSession[]
   locale String @default("es")
   hourFormat String @default("24")
@@ -81,6 +85,9 @@ model Event {
   series       EventSeries? @relation(fields: [seriesId, userId], references: [id, userId], onDelete: NoAction)
   recurrenceDate DateTime? @db.Date
   startedAt    DateTime? @db.Timestamptz(3)
+  categoryId String?
+  category CategoryBudget? @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction)
+  postponedAt DateTime? @db.Timestamptz(3)
   actualMinutes Int?
   estimatedMinutes Int?
   planningReason String?
@@ -101,6 +108,8 @@ model Event {
 }
 
 model Habit {
+  categoryId String?
+  category CategoryBudget? @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction)
   id              String          @id @default(cuid())
   userId          String
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -137,6 +146,11 @@ model HabitOccurrence {
 }
 
 model Task {
+  categoryId String?
+  category CategoryBudget? @relation(fields: [categoryId, userId], references: [id, userId], onDelete: NoAction)
+  postponements Int @default(0)
+  handledPostponements Int @default(0)
+  delegatedTo String?
   id              String          @id @default(cuid())
   userId          String
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -345,4 +359,57 @@ model DeviceSession {
   subscriptions PushSubscription[]
   @@unique([id, userId])
   @@index([userId, expiresAt])
+}
+
+model CategoryBudget {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name String
+  weeklyMinutes Int
+  preferredWindow PreferredWindow @default(ANY)
+  active Boolean @default(true)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  tasks Task[]
+  habits Habit[]
+  events Event[]
+  @@unique([id, userId])
+  @@unique([userId, name])
+}
+model PlanRevision {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date DateTime @db.Date
+  kind String
+  before Json
+  after Json
+  undoneAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@index([userId, date, createdAt])
+}
+model PlanFeedback {
+  source String @default("EXPLICIT")
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date DateTime @db.Date
+  reason String
+  preferredWindow PreferredWindow?
+  taskId String?
+  habitId String?
+  suggestedMinutes Int?
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  @@unique([userId, date, reason])
+}
+model DayCheckIn {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date DateTime @db.Date
+  mood String
+  note String?
+  resolved Int @default(0)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  @@unique([userId, date])
 }

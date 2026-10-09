@@ -11,3 +11,7 @@ Las suscripciones push se validan y pertenecen a una cuenta y versión de sesió
 Los contenedores web y worker ejecutan sin privilegios, con filesystem de solo lectura y capacidades restringidas. La base no publica puertos. El despliegue verifica imágenes de un mismo commit y respalda datos antes de migrar. Mantén Docker, Caddy, sistema operativo y dependencias actualizados; guarda copias fuera del servidor.
 
 Las comprobaciones incluyen aislamiento entre cuentas, CSRF/origen, cookies, CSP, límites concurrentes y privacidad de la caché PWA. La auditoría de producción realizada no mostró avisos conocidos; las verificaciones no garantizan ausencia de vulnerabilidades. La ejecución Docker debe comprobarse en un host con Docker. Para registro público todavía falta verificación y recuperación por correo.
+
+## Vista previa y restauración de planes
+
+La vista previa revierte todas sus escrituras. La confirmación valida un token firmado con AUTH_SECRET, la cuenta, el contenido de tarea, el estado actual de agenda y una caducidad máxima de cinco minutos. Confirmar, deshacer, registrar feedback, resolver aplazamientos y cerrar un día utilizan el bloqueo por cuenta y verifican propiedad en el servidor. El cierre diario comprueba versiones de bloque y se aplica en una sola transacción. Deshacer restaura solo bloques automáticos modificados que siguen pendientes y sin empezar; no sobreescribe ediciones posteriores. El historial guarda 30 snapshots compactos de cambios por cuenta y se elimina al eliminar la cuenta.

@@ -15,6 +15,7 @@ export const SignupFormSchema = z.object({ name: z.string().trim().min(2).max(80
 export const LoginFormSchema = z.object({ email, password: z.string().min(1).max(72).refine(value => new TextEncoder().encode(value).length <= 72, "Máximo 72 bytes.") });
 export const EventFormSchema = z.object({ title, date: DateSchema, endDate: DateSchema.optional(), startTime: TimeSchema, endTime: TimeSchema, notes: z.string().max(2000).optional(), location: z.string().trim().max(200).optional(), travelMinutes: z.coerce.number().int().min(0).max(180).default(0) });
 const schedulable = {
+  categoryId: z.string().max(100).optional().transform(value => value || null),
   title,
   durationMinutes: z.coerce.number().int().min(5).max(480),
   priority: z.coerce.number().int().min(1).max(3),

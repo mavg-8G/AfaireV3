@@ -1,0 +1,14 @@
+"use client";
+import { useState } from "react";
+import { useI18n } from "./LocaleProvider";
+import { submitPlanFeedback } from "@/app/actions/transparency";
+export function PlanFeedbackForm({day,events}:{day:string;events:{id:string;title:string}[]}) {
+  const {t}=useI18n();const [reason,setReason]=useState("OVERLOADED"),[pending,setPending]=useState(false),[message,setMessage]=useState(""),[failed,setFailed]=useState(false);
+  return <details className="rounded-2xl border border-line bg-card p-4"><summary className="text-sm text-sage">{t("Este plan no me sirvió")}</summary><form aria-busy={pending} className="mt-4 grid gap-3 text-sm" onSubmit={async e=>{e.preventDefault();setPending(true);setMessage("");try{const result=await submitPlanFeedback(day,new FormData(e.currentTarget));setFailed(Boolean(result.error));setMessage(result.error??t("Feedback guardado. Los próximos planes usarán esta señal durante 28 días."));}catch{setFailed(true);setMessage(t("No se pudo guardar."));}finally{setPending(false);}}}>
+    <label>{t("Qué falló")}<select name="reason" value={reason} onChange={e=>setReason(e.target.value)} className="field"><option value="OVERLOADED">{t("Muy cargado")}</option><option value="BAD_TIME">{t("Mala hora")}</option><option value="ESTIMATE">{t("Tarea mal estimada")}</option></select></label>
+    {reason==="OVERLOADED"&&<p className="text-xs text-muted">{t("Cada día con esta señal añade 5 puntos de holgura a los próximos planes, hasta 20 adicionales y un máximo total de 50 %. Guardarlo otra vez hoy no lo duplica.")}</p>}
+    {reason==="BAD_TIME"&&<><label>{t("Qué franja te habría servido mejor")}<select name="preferredWindow" required className="field"><option value="MORNING">{t("Mañana · 06–12")}</option><option value="AFTERNOON">{t("Tarde · 12–18")}</option><option value="EVENING">{t("Noche · 18–24")}</option></select></label><p className="text-xs text-muted">{t("Se preferirá esta franja para actividades sin hora preferida. Las preferencias explícitas y los bloques fijados se conservan.")}</p></>}
+    {reason==="ESTIMATE"&&<><label>{t("Bloque que estaba mal estimado")}<select name="eventId" required className="field"><option value="">{t("Elige un bloque")}</option>{events.map(event=><option key={event.id} value={event.id}>{event.title}</option>)}</select></label><label>{t("Minutos que necesitabas")}<input name="suggestedMinutes" type="number" required min={5} max={480} className="field" /></label><p className="text-xs text-muted">{t("La próxima estimación de esa tarea o hábito se acercará a esta duración, con un ajuste máximo del 25 %. El tiempo real se registra en el chequeo del día.")}</p></>}
+    <button disabled={pending||(reason==="ESTIMATE"&&!events.length)} className="w-fit rounded-full border border-line px-4 py-2">{t("Guardar feedback")}</button>{message&&<p role={failed?"alert":"status"} className="text-xs">{t(message)}</p>}
+  </form></details>;
+}

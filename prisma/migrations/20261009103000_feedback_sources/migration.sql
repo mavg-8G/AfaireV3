@@ -1,0 +1,2 @@
+ALTER TABLE "PlanFeedback" ADD COLUMN "source" TEXT NOT NULL DEFAULT 'EXPLICIT';
+ALTER TABLE "PlanFeedback" ADD CONSTRAINT "PlanFeedback_source" CHECK ("source" IN ('EXPLICIT', 'CHECK_IN'));

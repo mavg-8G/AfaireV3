@@ -78,18 +78,31 @@ try {
     assert.ok(bodyA.includes(titleA)); assert.ok(!bodyB.includes(titleA)); assert.ok(!bodyA.includes(stamp + "')"));
     assert.ok(bodyB.includes("&lt;img")); assert.ok(!bodyB.includes(titleB));
   });
-  check("Bandeja muestra energía y estimación sugerida con evidencia", () => { assert.match(bodyA, /Ligera/); assert.match(bodyA, /Duración sugerida/); assert.match(bodyA, /Aplicar estimación sugerida/); assert.match(bodyA, /Tareas recurrentes flexibles/); assert.match(bodyA, /Plantillas de tareas/); });
+  check("Bandeja muestra energía y estimación sugerida con evidencia", () => { assert.match(bodyA, /Ligera/); assert.match(bodyA, /Duración sugerida/); assert.match(bodyA, /Aplicar estimación sugerida/); assert.match(bodyA, /Tareas recurrentes flexibles/); assert.match(bodyA, /Plantillas de tareas/); assert.match(bodyA, /Ver cómo cambiaría el plan/); assert.match(bodyA, /name="categoryId"/); });
   const offlineAnonymous = await fetch(new URL("/api/offline-today", base));
   check("Copia offline requiere sesión", () => assert.equal(offlineAnonymous.status, 401));
   const offlineA = await fetch(new URL("/api/offline-today", base), { headers: { cookie: cookieHeader(authA.jar) } });
   const snapshotA = await offlineA.json() as { owner: string; expiresAt: string; events: { title: string }[] };
   check("Copia del día privada, con caducidad y aislada por cuenta", () => { assert.equal(offlineA.status, 200); assert.match(offlineA.headers.get("cache-control") ?? "", /no-store/); assert.equal(snapshotA.owner, ids[0]); assert.ok(Date.parse(snapshotA.expiresAt) > Date.now()); assert.ok(snapshotA.events.some(e => e.title === titleA)); assert.ok(!snapshotA.events.some(e => e.title === titleB)); });
-  for (const path of ["/", "/habits", "/review", "/settings", "/week"]) {
+  for (const path of ["/", "/habits", "/review", "/settings", "/week", "/check-in"]) {
     const page = await fetch(new URL(path, base), { headers: { cookie: cookieHeader(authA.jar) } });
     check("Página autenticada disponible: " + path, () => assert.equal(page.status, 200));
     const content = await page.text();
     if (path === "/settings") check("Silencio y observabilidad push visibles", () => { assert.match(content, /Horas de silencio/); assert.match(content, /name="quietStart"/); assert.match(content, /Proveedor push: HTTP 503/); assert.match(content, /Vacaciones y días especiales/); assert.match(content, /name="slackPercent"/); assert.match(content, /Plantilla de semana/); });
+    if (path === "/settings") check("Header compacto y activación push coherente con el servidor", () => {
+      const header = /<header[^>]*>([\s\S]*?)<\/header>/.exec(content)?.[1] ?? "";
+      assert.match(header, /aria-label="Cuenta de Prueba HTTP"/); assert.match(header, /<details/);
+      assert.match(header, /href="\/settings#sessions"/); assert.match(content, /id="sessions"/);
+      assert.doesNotMatch(header, /UN DÍA A LA VEZ/);
+      const configured = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT);
+      if (configured) { assert.match(content, /Activa este dispositivo y acepta el permiso/); assert.doesNotMatch(content, /Los avisos aún no están habilitados/); }
+      else assert.match(content, /Los avisos aún no están habilitados/);
+      if (process.env.VAPID_PRIVATE_KEY) assert.ok(!content.includes(process.env.VAPID_PRIVATE_KEY));
+    });
     if (path === "/") check("Explicación, capacidad y riesgo visibles", () => { assert.match(content, /¿Por qué este bloque está aquí/); assert.match(content, /Día difícil/); assert.match(content, /Carga y fechas en riesgo/); });
+    if (path === "/check-in") check("Chequeo de fin de día accesible y privado", () => { assert.match(content, /Qué pasó hoy/); assert.match(content, /Guardar chequeo del día/); assert.match(content, /name="mood"/); assert.match(page.headers.get("cache-control") ?? "", /no-store/); });
+    if (path === "/settings") check("Objetivos por categoría configurables", () => { assert.match(content, /Presupuesto de tiempo por categoría/); assert.match(content, /name="weeklyHours"/); });
+    if (path === "/") check("Chequeo y feedback disponibles desde la agenda", () => { assert.match(content, /href="\/check-in\?date=/); assert.match(content, /Este plan no me sirvió/); });
     if (path === "/habits") check("Frecuencia semanal disponible", () => assert.match(content, /name="frequencyMode"/));
   }
   for (const origin of ["https://evil.invalid", null]) {

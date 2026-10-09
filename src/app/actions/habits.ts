@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { HabitFormSchema, type ActionResult } from "@/lib/definitions";
 import { clearPendingHabitBlocks } from "@/lib/weekly-habits";
+import { assertCategory } from "@/lib/task-preview";
 import { requireUser } from "@/lib/dal";
 import { withUserLock, actionError, DomainError } from "@/lib/transaction";
 
@@ -14,7 +15,7 @@ export async function createHabit(formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
   try {
     const data = parse(formData);
-    await withUserLock(user.id, async tx => { await tx.habit.create({ data: { ...data, userId: user.id } }); });
+    await withUserLock(user.id, async tx => { await assertCategory(tx,user.id,data.categoryId); await tx.habit.create({ data: { ...data, userId: user.id } }); });
     revalidatePath("/habits"); return { ok: true };
   } catch (error) { return actionError(error); }
 }
@@ -23,6 +24,7 @@ export async function updateHabit(id: string, formData: FormData): Promise<Actio
   try {
     const data = parse(formData);
     await withUserLock(user.id, async tx => {
+      await assertCategory(tx,user.id,data.categoryId);
       const habit = await tx.habit.findFirst({ where: { id, userId: user.id, archived: false } });
       if (!habit) throw new DomainError("Hábito no encontrado.");
       if (habit.frequencyMode !== data.frequencyMode || habit.weeklyTarget !== data.weeklyTarget || JSON.stringify([...habit.daysOfWeek].sort()) !== JSON.stringify([...data.daysOfWeek].sort())) await clearPendingHabitBlocks(tx,user.id,id);

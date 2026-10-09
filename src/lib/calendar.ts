@@ -1,4 +1,5 @@
 import type { Prisma, EventStatus } from "@prisma/client";
+import { recordPostponement } from "./procrastination";
 import { DomainError } from "./transaction";
 import { combineLocalDateTime, dateOnly } from "./time";
 import { EventFormSchema } from "./definitions";
@@ -30,10 +31,12 @@ export async function ownedEvent(tx: Prisma.TransactionClient, userId: string, i
   if (!event) throw new DomainError("Evento no encontrado.");
   return event;
 }
-export async function setEventStatus(tx: Prisma.TransactionClient, userId: string, id: string, status: EventStatus) {
+export async function setEventStatus(tx: Prisma.TransactionClient, userId: string, id: string, status: EventStatus, options: { now?: Date; postpone?: boolean } = {}) {
+  const now = options.now ?? new Date();
   const event = await ownedEvent(tx, userId, id);
+  if (status === "SKIPPED" || options.postpone) await recordPostponement(tx, event, now);
   if (status === "PENDING") await assertFree(tx, userId, event.startsAt, event.endsAt, id, event.travelMinutes);
-  await tx.event.update({ where: { id }, data: { status, ...(status === "IN_PROGRESS" ? { startedAt: event.startedAt ?? new Date(), actualMinutes: null } : status === "DONE" && event.startedAt ? { actualMinutes: Math.max(1, Math.min(480, Math.round((Date.now() - event.startedAt.getTime()) / 60_000))) } : status === "PENDING" ? { startedAt: null, actualMinutes: null } : {}) } });
+  await tx.event.update({ where: { id }, data: { status, ...(status === "IN_PROGRESS" ? { startedAt: event.startedAt ?? now, actualMinutes: null } : status === "DONE" && event.startedAt ? { actualMinutes: Math.max(1, Math.min(480, Math.round((now.getTime() - event.startedAt.getTime()) / 60_000))) } : status === "PENDING" ? { startedAt: null, actualMinutes: null } : {}) } });
   if (event.occurrenceId) await tx.habitOccurrence.updateMany({ where: { id: event.occurrenceId, userId }, data: { status: status === "CANCELLED" ? "SKIPPED" : status } });
   if (event.taskId) await tx.task.updateMany({ where: { id: event.taskId, userId, archived: false }, data: { status: status === "DONE" || (event.status === "DONE" && status === "CANCELLED") ? "DONE" : ["CANCELLED", "SKIPPED"].includes(status) ? "INBOX" : "SCHEDULED" } });
 }

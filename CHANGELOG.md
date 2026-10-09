@@ -1,5 +1,25 @@
 # Historial de cambios
 
+## 2026-10-09 · Transparencia y aprendizaje
+
+- Vista previa antes/después al capturar tareas, con confirmación atómica y protección frente a agenda cambiada, caducidad y reenvíos.
+- Historial de 30 cambios y deshacer el último plan seguro, conservando citas, completados, identidades y nuevas tareas en la bandeja.
+- Revisión de tareas tras tres aplazamientos: dividir, reducir duración, delegar, eliminar o conservar.
+- Chequeo diario con resolución conjunta de pendientes, minutos reales y señal opcional para aprendizaje.
+- Feedback explícito de carga, horario y duración, con ajustes acotados y explicaciones visibles durante 28 días.
+- Objetivos semanales por categoría, reservas flexibles y progreso real/pendiente; respetan capacidad, urgencias, calendario y descansos.
+- Migraciones aditivas: `20261009100000_planner_transparency`, `20261009102000_budget_blocks` y `20261009103000_feedback_sources`. Ya aplicadas en local; la versión sigue en 2.0.0.
+- Validación: 73 pruebas unitarias, 64 de integración y 36 comprobaciones HTTP; ESLint, TypeScript, producción y worker. Flujos comprobados en Chrome con cuentas temporales, incluyendo móvil e inglés.
+- El push inicia la verificación y publicación de imágenes en GitHub. El VPS se actualiza por separado y aplica las migraciones con el contenedor de migraciones.
+
+
+## 2026-10-09 · Header y activación de avisos
+
+- Header compacto con navegación y menú de cuenta; tema, sesiones y cierre de sesión agrupados. Navegación desplazable en móvil y cierre del menú con Escape, al salir del foco o al tocar fuera.
+- Configuración VAPID persistente mediante `push:setup`, sin imprimir claves ni reemplazar parejas existentes; instrucciones para recrear web y worker en Docker.
+- Estado de notificaciones más claro, actualización del contador tras activar/desactivar un dispositivo y errores accesibles.
+- Validación del header y la activación de avisos: 69 pruebas unitarias, 32 comprobaciones HTTP, ESLint, compilación y revisión del header en tres tamaños con claro/nocturno. La recepción real requiere activar un dispositivo.
+
 ## 2026-10-09 · Planificador, sesiones y configuración regional
 
 - Gestión de sesiones por dispositivo, cierre individual o de las demás sesiones, invalidación de cookies copiadas y desvinculación de push al salir.

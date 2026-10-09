@@ -21,6 +21,8 @@ npm run dev
 npm run worker
 ```
 
+Antes de arrancar web y worker, configura Web Push una sola vez con `npm run push:setup -- --subject https://afaire.espectro.uk` (o tu contacto HTTPS / `mailto:`). El comando escribe `.env`, conserva la pareja existente y no imprime secretos. Si ambos procesos estaban arrancados, reinícialos.
+
 Abre http://127.0.0.1:3000. Los avisos reales requieren claves VAPID en `.env`, permiso del navegador y un worker activo. Las pruebas automatizadas usan un transporte simulado y no envían avisos a dispositivos reales.
 
 ## Casos para probar
@@ -77,3 +79,27 @@ La migración `20261009030000_sessions_locale` ya está aplicada en la base loca
 6. Recorre login, navegación, formularios y sesiones con Tab/Shift+Tab. El primer enlace de la agenda permite **saltar al contenido**; el foco debe quedar visible. Comprueba avisos de error/guardado con lector de pantalla, zoom al 200 %, temas Claro/Nocturno/Sistema y movimiento reducido del sistema. El tema se conserva por navegador y la copia offline respeta la elección explícita.
 
 Las pruebas automatizadas cubren revocación, aislamiento, caducidad, actividad limitada, retirada de push, cookies reutilizadas tras logout, inglés, formatos y DST, cuotas desde domingo, conservación de historial y copia offline traducida.
+
+## Header compacto y configuración de avisos
+
+- En escritorio comprueba que solo se muestran marca, seis enlaces y avatar. Abre el avatar para cambiar tema, acceder a sesiones o salir.
+- En móvil desplaza la fila de navegación; la página no debe desbordarse horizontalmente. El menú debe caber dentro de la pantalla.
+- Con teclado abre el avatar, recorre los controles y pulsa Escape: el menú se cierra y devuelve el foco al avatar. También se cierra al salir del foco o tocar fuera.
+- Con las tres variables VAPID configuradas, Ajustes permite activar el dispositivo. Acepta el permiso personalmente y comprueba que el contador se actualiza al activar/desactivar. Sin claves, muestra el estado pendiente y permite guardar preferencias.
+- `npm test` cubre la generación persistente, la conservación de claves y de otras variables, los contactos inválidos, las parejas incompatibles y la exclusión de escrituras simultáneas.
+
+Validación de estos cambios locales: 69 pruebas unitarias, 32 comprobaciones HTTP, ESLint y compilación de producción. Header revisado en Chrome a 1110, 768 y 390 píxeles, en claro y nocturno; menú, Escape, foco y tema comprobados sin errores de JavaScript. La recepción real de avisos queda pendiente de activar un dispositivo y probarla con su navegador.
+
+## Probar transparencia y aprendizaje
+
+1. En Ajustes crea «Estudio · 5 h/semana». En Bandeja asigna esa categoría a una tarea; en Hábitos puedes asignarla también a una rutina.
+2. Captura otra tarea, escoge mañana y calcula la vista previa. Comprueba que aún no existe en la bandeja y que se muestran el antes, el después y los pendientes. Confirma y revisa la agenda de esa fecha.
+3. Pulsa deshacer: el horario anterior debe volver y la tarea añadida quedar en la bandeja. Repite la replanificación, edita o completa un bloque y comprueba que no se puede sobrescribir ese cambio al deshacer.
+4. Aplaza una tarea en tres bloques distintos: omitir o desagendar cuenta una vez por bloque. Replanificar sin aplazarla no cuenta. Revisa dividir, reducir, delegar o retirar desde su tarjeta. «Mantener como está» espera otros tres aplazamientos.
+5. En la agenda de hoy abre el chequeo. Marca una tarea hecha con 25 minutos reales y otra para mañana; guarda ambas decisiones. El primer bloque conserva los minutos y el segundo vuelve a la bandeja. Una edición simultánea debe bloquear el guardado completo.
+6. Da feedback de sobrecarga y replanifica: la capacidad y la explicación muestran la holgura adicional. Repetir feedback hoy no duplica la señal. Para mala hora, elige una franja; para mala estimación, elige un bloque y minutos. La duración base se conserva.
+7. Revisa el objetivo de categoría al generar varios días de la semana, con días especiales y con una reserva omitida. Debe mostrar el déficit sin duplicar minutos de tareas categorizadas. Prueba semanas desde domingo y desde lunes, con DST y cambio de zona.
+
+Las pruebas de transparencia incluyen rollback completo de vista previa (también materialización recurrente), confirmación concurrente, tokens modificados/caducados/de otra cuenta, deshacer con identificadores originales, bloqueo por ediciones o tiempo transcurrido, aplazamientos sin duplicación, resoluciones concretas, cierre diario atómico, señal del chequeo corregida sin borrar feedback explícito y recuperación de presupuestos semanales.
+
+Validación de transparencia: 73 pruebas unitarias, 64 de integración y 36 comprobaciones HTTP. Compilación, ESLint y TypeScript correctos. Prueba de navegador con cuentas temporales: vista previa/confirmación, deshacer, feedback, chequeo conjunto, delegación y creación de categorías; revisión en móvil e inglés sin errores de JavaScript.

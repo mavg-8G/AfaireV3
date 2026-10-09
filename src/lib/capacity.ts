@@ -1,3 +1,4 @@
+import { feedbackPolicy } from "./plan-feedback";
 import type { Prisma } from "@prisma/client";
 import { availabilityWindows } from "./availability";
 import { startOfLocalWeek, addLocalDays, calendarDayBounds, dateOnly, roundUp, weekdayForDate, ymdInZone } from "./time";
@@ -21,6 +22,8 @@ export function analyzeLoad(days: CapacityDay[], tasks: LoadTask[], today: strin
 }
 export async function capacityForecast(tx: Prisma.TransactionClient, userId: string, start: string, now = new Date()) {
  const user=await tx.user.findUniqueOrThrow({where:{id:userId},include:{availability:true}}), today=ymdInZone(now,user.timezone);
+ const signal=feedbackPolicy(await tx.planFeedback.findMany({where:{userId,date:{gte:dateOnly(addLocalDays(today,-28)),lte:dateOnly(today)}}}));
+ const effectiveSlack=Math.min(50,user.slackPercent+signal.extraSlack);
  const until=addLocalDays(start,27), bounds={start:calendarDayBounds(start,user.timezone).start,end:calendarDayBounds(until,user.timezone).end};
  const [overrides,events,tasks,habits,occurrences]=await Promise.all([
   tx.dayOverride.findMany({where:{userId,date:{gte:dateOnly(start),lte:dateOnly(until)}}}),
@@ -35,7 +38,7 @@ export async function capacityForecast(tx: Prisma.TransactionClient, userId: str
  for(let day=start;day<=until;day=addLocalDays(day,1)) {
   const override=overrides.find(o=>o.date.getTime()===dateOnly(day).getTime());let gaps: Gap[];
   try {gaps=availabilityWindows(user,day,user.timezone,override).flatMap(w=>computeGaps(new Date(Math.max(w.start.getTime(),roundUp(now).getTime())),w.end,busy,user.bufferMinutes));} catch {gaps=[];}
-  const minutes=gaps.reduce((n,g)=>n+(g.end.getTime()-g.start.getTime())/60000,0)*(1-user.slackPercent/100)*(override?.capacityPercent??100)/100;
+  const minutes=gaps.reduce((n,g)=>n+(g.end.getTime()-g.start.getTime())/60000,0)*(1-effectiveSlack/100)*(override?.capacityPercent??100)/100;
   let habitMinutes=0;
   for(const habit of habits){
    if(override?.paused || (override?.essentialOnly&&!habit.required))continue;

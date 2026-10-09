@@ -1,3 +1,7 @@
+import { recordPostponement } from "./procrastination";
+import { captureAgenda, saveRevision } from "./plan-history";
+import { feedbackPolicy, feedbackDuration } from "./plan-feedback";
+import { categoryTargets, categoryFillItems } from "./category-budgets";
 import { materializeTaskSeries } from "./task-series";
 import { weeklyHabitDue } from "./weekly-habits";
 import { Prisma } from "@prisma/client";
@@ -10,14 +14,18 @@ import { availabilityWindows } from "./availability";
 import { habitToSchedulable, taskToSchedulable, scheduleInWindows, freeMinutes, type Schedulable } from "./scheduler";
 
 export type Unscheduled = { key: string; title: string; reason: string; required: boolean };
-export async function generateDay(userId: string, requestedDay?: string, options: { now?: Date; onlyIfMissing?: boolean; recordWorkerRun?: boolean; dayMode?: "NORMAL" | "SHORT" | "DIFFICULT" } = {}) {
+export type PlanOptions = { now?: Date; onlyIfMissing?: boolean; recordWorkerRun?: boolean; dayMode?: "NORMAL" | "SHORT" | "DIFFICULT" };
+export async function generateDay(userId: string, requestedDay?: string, options: PlanOptions = {}) {
+  return withUserLock(userId, tx => generateDayInTransaction(tx, userId, requestedDay, options));
+}
+export async function generateDayInTransaction(tx: Prisma.TransactionClient, userId: string, requestedDay?: string, options: PlanOptions = {}) {
   const now = options.now ?? new Date();
-  return withUserLock(userId, async tx => {
     const user = await tx.user.findUniqueOrThrow({ where: { id: userId }, include: { availability: true } });
     const today = ymdInZone(now, user.timezone);
     const day = DateSchema.parse(requestedDay ?? today);
     if (day < today) throw new DomainError("Solo puedes planificar hoy o una fecha futura.");
     const date = dateOnly(day);
+    const previousOverride = await tx.dayOverride.findUnique({ where: { userId_date: { userId, date } } });
     if (options.dayMode) {
       const mode = { capacityPercent: options.dayMode === "NORMAL" ? 100 : options.dayMode === "SHORT" ? 50 : 30, essentialOnly: options.dayMode === "DIFFICULT" };
       await tx.dayOverride.upsert({ where: { userId_date: { userId, date } }, create: { userId, date, ...mode }, update: mode });
@@ -37,10 +45,18 @@ export async function generateDay(userId: string, requestedDay?: string, options
     if (user.carryOver) {
       const expired = await tx.event.findMany({ where: { userId, source: "AUTO", locked: false, status: "PENDING", taskId: { not: null }, endsAt: { lte: todayCalendar.start } } });
       if (expired.length) {
+        for (const event of expired) await recordPostponement(tx, event, now);
         await tx.event.updateMany({ where: { userId, id: { in: expired.map(event => event.id) } }, data: { status: "CANCELLED" } });
         await tx.task.updateMany({ where: { userId, archived: false, status: "SCHEDULED", id: { in: expired.map(event => event.taskId!) } }, data: { status: "INBOX" } });
       }
     }
+    const before = await captureAgenda(tx, userId, day); before.override = previousOverride;
+    before.overrides = before.overrides.filter(row => row.date.getTime() !== date.getTime());
+    if (previousOverride) before.overrides.push(previousOverride);
+    before.overrides.sort((a,b) => a.id.localeCompare(b.id));
+    const feedback = await tx.planFeedback.findMany({ where: { userId, date: { gte: dateOnly(addLocalDays(today, -28)), lte: dateOnly(today) } } });
+    const signal = feedbackPolicy(feedback);
+    const effectiveSlack = Math.min(50, user.slackPercent + signal.extraSlack);
     const events = await tx.event.findMany({ where: { userId, OR: [
       { startsAt: { lt: addMinutesUtc(calendar.end, user.bufferMinutes + 180) }, endsAt: { gt: addMinutesUtc(calendar.start, -user.bufferMinutes - 180) } },
       { planningDate: date },
@@ -55,7 +71,7 @@ export async function generateDay(userId: string, requestedDay?: string, options
     }
     await materializeTaskSeries(tx, userId, day, addLocalDays(day, 90));
     const history = user.adaptiveDurations ? await tx.event.findMany({ where: { userId, status: "DONE", actualMinutes: { not: null } }, orderBy: { startsAt: "asc" }, include: { task: true } }) : [];
-    const focus = user.focusWindow === "LEARNED" ? learnedFocus(await tx.usageSample.findMany({ where: { userId, timezone: user.timezone, observedAt: { gte: new Date(now.getTime() - 28 * 86400_000) } } }), "MORNING") : user.focusWindow;
+    const focus = signal.preferredWindow ?? (user.focusWindow === "LEARNED" ? learnedFocus(await tx.usageSample.findMany({ where: { userId, timezone: user.timezone, observedAt: { gte: new Date(now.getTime() - 28 * 86400_000) } } }), "MORNING") : user.focusWindow);
     const habits = await tx.habit.findMany({ where: { userId, active: true, archived: false, OR: [{ frequencyMode: "DAYS", daysOfWeek: { has: weekday } }, { frequencyMode: "WEEKLY" }] }, orderBy: { id: "asc" } });
     const items: Schedulable[] = [];
     for (const habit of habits) {
@@ -68,19 +84,23 @@ export async function generateDay(userId: string, requestedDay?: string, options
         include: { event: true },
       });
       if (occurrence.status !== "PENDING" || occurrence.event) continue;
-      items.push({ ...habitToSchedulable(habit), originalMinutes: habit.durationMinutes, durationMinutes: adjustedDuration(habit.durationMinutes, history.filter(e => e.habitId === habit.id).map(e => e.actualMinutes!)), occurrenceId: occurrence.id, preferred: preferredBounds(day, user.timezone, habit.preferredWindow) });
+      items.push({ ...habitToSchedulable(habit), explicitEstimate: feedback.some(row => row.reason === "ESTIMATE" && row.habitId === habit.id), originalMinutes: habit.durationMinutes, durationMinutes: feedbackDuration(adjustedDuration(habit.durationMinutes, history.filter(e => e.habitId === habit.id).map(e => e.actualMinutes!)), feedback, undefined, habit.id, habit.durationMinutes), occurrenceId: occurrence.id, preferred: preferredBounds(day, user.timezone, habit.preferredWindow === "ANY" ? signal.preferredWindow ?? "ANY" : habit.preferredWindow) });
     }
     const tasks = await tx.task.findMany({ where: { userId, status: "INBOX", archived: false, OR: [{ availableFrom: null }, { availableFrom: { lte: date } }], events: { none: { status: { in: ["PENDING", "IN_PROGRESS"] } } } }, orderBy: { id: "asc" } });
-    for (const task of tasks) items.push({ ...taskToSchedulable(task), originalMinutes: task.durationMinutes, focusReason: task.energy === "DEEP" && task.preferredWindow === "ANY" ? `Tarea profunda situada en tu franja de foco${user.focusWindow === "LEARNED" ? " estimada a partir del uso reciente" : " elegida en Ajustes"}.` : undefined, durationMinutes: adjustedDuration(task.durationMinutes, history.filter(e => e.title.trim().toLocaleLowerCase() === task.title.trim().toLocaleLowerCase()).map(e => e.actualMinutes!)), preferred: preferredBounds(day, user.timezone, task.energy === "DEEP" && task.preferredWindow === "ANY" ? focus : task.preferredWindow) });
+    for (const task of tasks) items.push({ ...taskToSchedulable(task), explicitEstimate: feedback.some(row => row.reason === "ESTIMATE" && row.taskId === task.id), originalMinutes: task.durationMinutes, focusReason: signal.preferredWindow ? "La franja se eligió teniendo en cuenta tu feedback reciente sobre la hora." : task.energy === "DEEP" && task.preferredWindow === "ANY" ? `Tarea profunda situada en tu franja de foco${user.focusWindow === "LEARNED" ? " estimada a partir del uso reciente" : " elegida en Ajustes"}.` : undefined, durationMinutes: feedbackDuration(adjustedDuration(task.durationMinutes, history.filter(e => e.title.trim().toLocaleLowerCase() === task.title.trim().toLocaleLowerCase()).map(e => e.actualMinutes!)), feedback, task.id, undefined, task.durationMinutes), preferred: preferredBounds(day, user.timezone, task.preferredWindow === "ANY" ? (signal.preferredWindow ?? (task.energy === "DEEP" ? focus : "ANY")) : task.preferredWindow) });
+    const categoryGoals = await categoryTargets(tx, userId, day, now, protectedEvents, signal.extraSlack);
+    const fillLimits = Object.fromEntries(categoryGoals.map(goal => [goal.category.id, goal.todayMinutes]));
+    for (const item of items) if (item.categoryId && categoryGoals.some(goal => goal.category.id === item.categoryId && goal.remaining > 0)) item.categoryWeight = 1;
+    for (const goal of categoryGoals) items.push(...categoryFillItems(goal.category, goal.todayMinutes).map(item => ({ ...item, preferred: preferredBounds(day, user.timezone, goal.category.preferredWindow === "ANY" ? signal.preferredWindow ?? "ANY" : goal.category.preferredWindow) })));
     const expiredKeys = new Set(tasks.filter(task => task.seriesId && task.dueDate && task.dueDate < date).map(task => `task:${task.id}`));
     const deferred = items.filter(item => expiredKeys.has(item.key) || (override?.essentialOnly && !item.required && item.priority !== 1 && (!item.dueDate || item.dueDate > dateOnly(addLocalDays(day, 1)))));
     const eligible = items.filter(item => !deferred.includes(item));
-    const budget = freeMinutes(remainingWindows, protectedEvents, user.bufferMinutes) * (1 - user.slackPercent / 100) * (override?.capacityPercent ?? 100) / 100;
-    const result = scheduleInWindows(remainingWindows, protectedEvents, eligible, user.bufferMinutes, { maxMinutes: user.slackPercent || (override?.capacityPercent ?? 100) < 100 ? budget : undefined, longBlockMinutes: user.longBlockMinutes, recoveryMinutes: user.recoveryMinutes });
+    const budget = freeMinutes(remainingWindows, protectedEvents, user.bufferMinutes) * (1 - effectiveSlack / 100) * (override?.capacityPercent ?? 100) / 100;
+    const result = scheduleInWindows(remainingWindows, protectedEvents, eligible, user.bufferMinutes, { categoryFillLimits: fillLimits, maxMinutes: effectiveSlack || (override?.capacityPercent ?? 100) < 100 ? budget : undefined, longBlockMinutes: user.longBlockMinutes, recoveryMinutes: user.recoveryMinutes });
     for (const placement of result.placements) {
       await tx.event.create({ data: {
-        userId, title: placement.item.title, startsAt: placement.startsAt, endsAt: placement.endsAt, planningDate: date,
-        recoveryMinutes: placement.recoveryMinutes, planningReason: placement.reason, estimatedMinutes: placement.item.durationMinutes, locked: false, source: placement.item.source, habitId: placement.item.habitId, occurrenceId: placement.item.occurrenceId, taskId: placement.item.taskId,
+        userId, categoryId: placement.item.categoryId, title: placement.item.title, startsAt: placement.startsAt, endsAt: placement.endsAt, planningDate: date,
+        recoveryMinutes: placement.recoveryMinutes, planningReason: placement.reason + (signal.extraSlack ? ` Se reserva ${effectiveSlack} % de holgura, incluyendo tus señales de sobrecarga recientes.` : "") + (signal.preferredWindow && placement.item.preferredWindow === "ANY" ? " La franja se eligió teniendo en cuenta tu feedback reciente sobre la hora." : ""), estimatedMinutes: placement.item.durationMinutes, locked: false, source: placement.item.source, habitId: placement.item.habitId, occurrenceId: placement.item.occurrenceId, taskId: placement.item.taskId,
       } });
     }
     await tx.task.updateMany({ where: { userId, id: { in: result.placements.flatMap(p => p.item.taskId ? [p.item.taskId] : []) } }, data: { status: "SCHEDULED" } });
@@ -90,9 +110,9 @@ export async function generateDay(userId: string, requestedDay?: string, options
       create: { userId, date, generatedAt: now, skipped: details.map(item => item.title), details },
       update: { generatedAt: now, version: { increment: 1 }, skipped: details.map(item => item.title), details },
     });
+    await saveRevision(tx, userId, day, before, options.dayMode ? `MODE_${options.dayMode}` : options.recordWorkerRun ? "WORKER" : "PLAN", now);
     if (options.recordWorkerRun) await tx.workerRun.create({ data: { userId, date, status: "SUCCESS", message: `${result.placements.length} bloques; ${details.length} sin espacio`, attemptedAt: now } });
     return { placed: result.placements.length, skipped: details.map(item => item.title), alreadyPlanned: false };
-  });
 }
 
 export async function runDuePlans(now = new Date(), options: { userIds?: string[] } = {}) {

@@ -1,18 +1,14 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { TaskFormSchema, type ActionResult } from "@/lib/definitions";
+import { type ActionResult } from "@/lib/definitions";
 import { requireUser } from "@/lib/dal";
 import { withUserLock, actionError, DomainError } from "@/lib/transaction";
 import { setEventStatus } from "@/lib/calendar";
-import { dateOnly } from "@/lib/time";
+import { parseTaskInput, assertCategory } from "@/lib/task-preview";
 import { applyTaskDurationSuggestion } from "@/lib/duration-suggestions";
 import type { Prisma } from "@prisma/client";
 
-function parse(formData: FormData) {
-  const result = TaskFormSchema.safeParse(Object.fromEntries(formData));
-  if (!result.success) throw new DomainError("Revisa el título, la duración y la fecha.");
-  return { ...result.data, dueDate: result.data.dueDate ? dateOnly(result.data.dueDate) : null };
-}
+const parse = parseTaskInput;
 function refresh() { revalidatePath("/inbox"); revalidatePath("/"); revalidatePath("/week"); revalidatePath("/review"); }
 async function owned(tx: Prisma.TransactionClient, userId: string, id: string) {
   const task = await tx.task.findFirst({ where: { id, userId, archived: false } });
@@ -23,7 +19,7 @@ export async function createTask(formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
   try {
     const data = parse(formData);
-    await withUserLock(user.id, async tx => { await tx.task.create({ data: { ...data, userId: user.id } }); });
+    await withUserLock(user.id, async tx => { await assertCategory(tx, user.id, data.categoryId); await tx.task.create({ data: { ...data, userId: user.id } }); });
     refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }
@@ -32,6 +28,7 @@ export async function updateTask(id: string, formData: FormData): Promise<Action
   try {
     const data = parse(formData);
     await withUserLock(user.id, async tx => {
+      await assertCategory(tx, user.id, data.categoryId);
       const task = await owned(tx, user.id, id);
       if (task.seriesId && (!data.dueDate || (task.availableFrom && data.dueDate < task.availableFrom))) throw new DomainError("Una repetición necesita una fecha límite posterior o igual a su apertura.");
       if (task.status !== "INBOX") throw new DomainError("Devuelve la tarea a la bandeja antes de editarla.");
@@ -66,8 +63,9 @@ export async function returnTaskToInbox(id: string) {
     await withUserLock(user.id, async tx => {
       const task = await owned(tx, user.id, id);
       if (task.status === "DONE") throw new DomainError("La tarea ya está completada.");
-      await tx.event.updateMany({ where: { taskId: id, userId: user.id, status: { in: ["PENDING", "IN_PROGRESS"] } }, data: { status: "CANCELLED" } });
-      await tx.task.update({ where: { id }, data: { status: "INBOX" } });
+      const active = await tx.event.findMany({ where: { taskId: id, userId: user.id, status: { in: ["PENDING", "IN_PROGRESS"] } } });
+      for (const event of active) await setEventStatus(tx, user.id, event.id, "CANCELLED", { postpone: true });
+      await tx.task.update({ where: { id }, data: { status: "INBOX", delegatedTo: null } });
     }); refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }
