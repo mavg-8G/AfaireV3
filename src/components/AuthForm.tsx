@@ -7,26 +7,25 @@ import { signup } from "@/app/actions/auth";
 import type { AuthFormState } from "@/lib/definitions";
 import { LanguagePicker } from "./LocaleProvider";
 import { ThemePicker } from "./ThemeProvider";
+import { BrandMark } from "./Icons";
 
 export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "register"; inviteOnly?: boolean }) {
   const { t, preferences } = useI18n();
   const [state, setState] = useState<AuthFormState>({}); const [pending, setPending] = useState(false);
   const register = mode === "register";
-  return <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-2">
-    <section className="hidden lg:block"><Link href="/login" className="display text-3xl">Afaire<span className="text-sage">.</span></Link>
-      <p className="mt-16 text-xs uppercase tracking-[.25em] text-sage">{t("Haz espacio para lo que importa")}</p>
-      <h2 className="mt-5 max-w-lg text-6xl leading-[1.08]">{t("Tu día, con un poco más de calma.")}</h2>
+  return <main className="topbar mx-auto grid min-h-dvh w-full max-w-6xl items-center gap-12 px-5 py-10 sm:px-6 lg:grid-cols-2 lg:py-12">
+    <section className="hidden lg:block"><Link href="/login" className="flex w-fit items-center gap-3 font-display text-3xl font-semibold tracking-tight"><BrandMark className="size-11" />Afaire</Link>
+      <p className="eyebrow mt-16">{t("Haz espacio para lo que importa")}</p>
+      <h2 className="mt-4 max-w-lg text-6xl font-semibold leading-[1.02] tracking-[-0.035em]">{t("Tu día, con un poco más de calma.")}</h2>
       <p className="mt-6 max-w-md text-lg leading-relaxed text-muted">{t("Fija tus citas, elige tus rutinas y deja que Afaire encuentre un lugar para cada cosa.")}</p>
-      <div className="mt-10 max-w-sm space-y-3 rounded-3xl border border-line bg-card p-6 shadow-sm">
-        <p className="text-xs uppercase tracking-widest text-muted">{t("Un día con intención")}</p>
-        {[["09:00", t("Tu cita, en su lugar"), "bg-paper"], ["10:10", t("Un momento para avanzar"), "bg-sage/10"], ["12:30", t("Tiempo para una pausa"), "bg-sage/10"]].map(([time, label, color]) => <div key={time} className={`flex items-center gap-4 rounded-xl px-3 py-3 ${color}`}><span className="text-xs tabular-nums text-muted">{time}</span><span className="text-sm">{t(label)}</span></div>)}
-      </div>
+      <ol aria-label={t("Un día con intención")} className="day-rail mt-10 max-w-sm space-y-3">
+        {[["09:00", t("Tu cita, en su lugar"), true], ["10:10", t("Un momento para avanzar"), false], ["12:30", t("Tiempo para una pausa"), false]].map(([time, label, fixed]) => <li key={String(time)} className="relative grid grid-cols-[3.5rem_1fr] gap-x-6 sm:grid-cols-[4.5rem_1fr]"><span className="pt-3.5 text-right text-sm font-semibold tabular-nums">{time}</span><span aria-hidden="true" className={`absolute top-[1.05rem] left-[calc(5.25rem-6px)] size-3 rounded-full border-2 ${fixed ? "border-fixed bg-fixed" : "border-sage bg-card"}`} /><span className={`rounded-2xl border bg-card px-4 py-3 text-sm font-medium shadow-sm ${fixed ? "border-fixed/40" : "border-line"}`}>{label}</span></li>)}
+      </ol>
     </section>
-    <section className="mx-auto w-full max-w-md rounded-3xl border border-line bg-card p-7 shadow-[0_24px_80px_-48px_rgba(31,26,22,.4)] sm:p-10">
-      <div className="mb-5 flex flex-wrap justify-end gap-3"><LanguagePicker /><ThemePicker /></div>
-      <p className="display text-2xl text-sage lg:hidden">Afaire.</p>
-      <p className="mt-2 text-xs uppercase tracking-widest text-sage">{register ? t("Empieza aquí") : t("Bienvenido de nuevo")}</p>
-      <h1 className="mt-3 text-4xl">{register ? t("Crea tu cuenta") : t("Tu agenda te espera")}</h1>
+    <section className="mx-auto w-full max-w-md rounded-[2rem] border border-line bg-card p-6 shadow-lg sm:p-10">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><span className="flex items-center gap-2.5 font-display text-xl font-semibold lg:hidden"><BrandMark className="size-8" />Afaire</span><div className="flex items-center gap-2"><LanguagePicker /><div className="w-32"><ThemePicker compact /></div></div></div>
+      <p className="eyebrow">{register ? t("Empieza aquí") : t("Bienvenido de nuevo")}</p>
+      <h1 className="mt-2 text-4xl sm:text-[2.75rem]">{register ? t("Crea tu cuenta") : t("Tu agenda te espera")}</h1>
       <p className="mt-3 text-sm text-muted">{register ? t("Tu espacio personal para organizar cada día.") : t("Entra y descubre qué sigue hoy.")}</p>
       <form aria-busy={pending} className="mt-7 space-y-4" onSubmit={async event => {
         event.preventDefault(); setPending(true); setState({});
@@ -52,7 +51,7 @@ export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "regist
         {register && inviteOnly && <label className="block text-sm">{t("Código de invitación")}<input name="inviteCode" required type="password" className="field" /></label>}
         {state.errors && <p id="auth-feedback" role="alert" className="text-sm text-terracotta">{Object.values(state.errors).flat().filter(Boolean).map(value => t(value!)).join(" ")}</p>}
         {state.message && <p role="alert" className="text-sm text-terracotta">{t(state.message)}</p>}
-        <button disabled={pending} className="w-full rounded-full bg-sage px-5 py-3 text-white transition hover:bg-ink">{pending ? t("Un momento…") : register ? t("Crear mi espacio →") : t("Entrar →")}</button>
+        <button disabled={pending} className="btn btn-primary w-full">{pending ? t("Un momento…") : register ? t("Crear mi espacio →") : t("Entrar →")}</button>
       </form>
       <p className="mt-6 text-center text-sm text-muted">{register ? t("¿Ya tienes una cuenta? ") : t("¿Primera vez aquí? ")}<Link href={register ? "/login" : "/register"} className="text-sage underline underline-offset-4">{register ? t("Inicia sesión") : t("Crea tu cuenta")}</Link></p>
     </section>

@@ -18,13 +18,13 @@ export function SettingsForms({ profile, onboarding = false }: { profile: Profil
   const { t, preferences } = useI18n();
   const [message, setMessage] = useState(""); const [error, setError] = useState(false); const [pending, setPending] = useState(false);
   const [pwdState, pwdAction, pwdPending] = useActionState(changePassword, {} as AuthFormState); const router = useRouter();
-  return <div className={`grid grid-cols-1 gap-6 ${onboarding ? "mx-auto max-w-3xl" : "lg:grid-cols-[minmax(0,1fr)_340px]"}`}>
+  return <div className={`grid grid-cols-1 gap-6 ${onboarding ? "mx-auto max-w-3xl" : "xl:grid-cols-[minmax(0,1fr)_340px]"}`}>
     <form aria-busy={pending} className="min-w-0 space-y-6 rounded-3xl border border-line bg-card p-5 sm:p-8" onSubmit={async event => {
       event.preventDefault(); setPending(true); setMessage("");
       try { const result = await updateSettings(new FormData(event.currentTarget)); setError(Boolean(result.error)); setMessage(result.error ?? t("Ajustes guardados.")); if (!result.error) { if (onboarding) router.push("/"); router.refresh(); } }
       catch { setError(true); setMessage(t("No se pudo guardar. Inténtalo de nuevo.")); } finally { setPending(false); }
     }}>
-      <div><p className="text-xs uppercase tracking-widest text-sage">{onboarding ? t("Tu espacio, a tu ritmo") : t("Preferencias")}</p><h1 className="mt-3 text-4xl">{onboarding ? t("Dale forma a tu día") : t("Ajustes")}</h1><p className="mt-3 text-sm leading-relaxed text-muted">{t("Define cuándo tienes tiempo. Afaire organiza tus actividades dentro de ese horario.")}</p></div>
+      <div><p className="eyebrow">{onboarding ? t("Tu espacio, a tu ritmo") : t("Preferencias")}</p><h1 className="mt-2 text-[2.5rem] sm:text-5xl">{onboarding ? t("Dale forma a tu día") : t("Ajustes")}</h1><p className="mt-3 text-sm leading-relaxed text-muted">{t("Define cuándo tienes tiempo. Afaire organiza tus actividades dentro de ese horario.")}</p></div>
       <input type="hidden" name="dayStart" value={profile.dayStart} /><input type="hidden" name="dayEnd" value={profile.dayEnd} />{onboarding && <input type="hidden" name="onboarding" value="true" />}
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm">{t("Nombre")}<input name="name" required defaultValue={profile.name} maxLength={80} className="field" /></label>
@@ -50,12 +50,12 @@ export function SettingsForms({ profile, onboarding = false }: { profile: Profil
       <label className="flex items-start gap-3 text-sm"><input name="carryOver" type="checkbox" defaultChecked={profile.carryOver} /><span>{t("Recuperar tareas flexibles pendientes de días anteriores")}<span className="mt-1 block text-xs text-muted">{t("Las citas fijas y los hábitos de ayer no se trasladan.")}</span></span></label>
       {onboarding && <fieldset><legend className="font-medium">{t("Empieza con algunas rutinas")}</legend><p className="mt-1 text-xs text-muted">{t("Opcionales. Puedes editarlas y añadir otras después.")}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{HABIT_TEMPLATES.map(template => <label key={template.key} className="flex items-center gap-3 rounded-xl border border-line p-3 text-sm"><input type="checkbox" name="templates" value={template.key} /><span>{t(template.title)}<span className="block text-xs text-muted">{template.durationMinutes} min · {template.required ? t("Esencial") : t("Opcional")}</span></span></label>)}</div></fieldset>}
       {message && <p role={error ? "alert" : "status"} className={`text-sm ${error ? "text-terracotta" : "text-sage"}`}>{t(message)}</p>}
-      <button disabled={pending} className="rounded-full bg-sage px-6 py-3 text-sm text-white">{pending ? t("Guardando…") : onboarding ? t("Abrir mi agenda →") : t("Guardar preferencias")}</button>
+      <button disabled={pending} className="btn btn-primary text-sm">{pending ? t("Guardando…") : onboarding ? t("Abrir mi agenda →") : t("Guardar preferencias")}</button>
     </form>
-    {!onboarding && <aside className="space-y-5"><form aria-busy={pending} action={pwdAction} className="space-y-4 rounded-2xl border border-line bg-card p-5">
+    {!onboarding && <aside className="space-y-5"><form aria-busy={pending} action={pwdAction} className="space-y-4 rounded-2xl border border-line bg-card p-5 shadow-sm">
       <h2 className="text-2xl">{t("Contraseña")}</h2><label className="block text-sm">{t("Actual")}<input name="currentPassword" type="password" required autoComplete="current-password" className="field" /></label><label className="block text-sm">{t("Nueva")}<input name="newPassword" type="password" required minLength={10} maxLength={72} autoComplete="new-password" className="field" /></label>
       {pwdState.message && <p role="status" className="text-sm">{t(pwdState.message)}</p>}{pwdState.errors && <p role="alert" className="text-sm text-terracotta">{Object.values(pwdState.errors).flat().filter(Boolean).map(value => t(value!)).join(" ")}</p>}
-      {pwdState.ok ? <Link href="/login" className="text-sm text-sage underline">{t("Volver a iniciar sesión")}</Link> : <button disabled={pwdPending} className="rounded-full border border-line px-4 py-2 text-sm">{pwdPending ? t("Guardando…") : t("Cambiar contraseña")}</button>}
+      {pwdState.ok ? <Link href="/login" className="text-sm text-sage underline">{t("Volver a iniciar sesión")}</Link> : <button disabled={pwdPending} className="btn text-sm">{pwdPending ? t("Guardando…") : t("Cambiar contraseña")}</button>}
     </form><div className="space-y-4 rounded-2xl bg-sage/10 p-5 text-sm leading-relaxed text-sage"><p>{t("Los horarios aprendidos se aplican a los próximos planes. Tus citas y planes existentes mantienen su lugar.")}</p><ActionButton action={resetLearning} confirm={t("¿Reiniciar lo aprendido y volver a tus horarios iniciales?")}>{t("Reiniciar aprendizaje")}</ActionButton></div></aside>}
   </div>;
 }

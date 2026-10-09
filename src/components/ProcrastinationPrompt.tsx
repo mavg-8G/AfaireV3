@@ -17,6 +17,6 @@ export function ProcrastinationPrompt({task}:{task:Task}) {
     {choice==="DELEGATE"&&<><label>{t("Persona responsable")}<input name="delegatedTo" required maxLength={100} className="field" /></label><p className="text-xs text-muted">{t("Quedará registrada en la bandeja y saldrá del autoagendado. Puedes recuperarla cuando quieras.")}</p></>}
     {choice==="DELETE"&&<label className="flex items-center gap-2"><input type="checkbox" required />{t("Confirmo que quiero retirar esta tarea")}</label>}
     {choice==="KEEP"&&<p className="text-xs text-muted">{t("Se volverá a preguntar después de otros tres aplazamientos.")}</p>}
-    <button disabled={pending} className="w-fit rounded-full border border-line px-4 py-2">{t("Aplicar ajuste")}</button>{message&&<p role={failed?"alert":"status"} className="text-xs">{t(message)}</p>}
+    <button disabled={pending} className="btn w-fit">{t("Aplicar ajuste")}</button>{message&&<p role={failed?"alert":"status"} className="text-xs">{t(message)}</p>}
   </form></details>;
 }

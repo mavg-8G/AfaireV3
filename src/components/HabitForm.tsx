@@ -9,7 +9,7 @@ export function HabitForm({ habit, categories = [] }: { habit?: Habit; categorie
   const { t, preferences } = useI18n();
   const [error, setError] = useState(""); const [pending, setPending] = useState(false); const [message, setMessage] = useState("");
   const [frequencyMode,setFrequencyMode]=useState(habit?.frequencyMode??"DAYS");
-  return <form aria-busy={pending} className="grid gap-4 rounded-2xl border border-line bg-card p-5" onSubmit={async event => {
+  return <form aria-busy={pending} className="grid gap-4 rounded-2xl border border-line bg-card p-5 shadow-sm" onSubmit={async event => {
     event.preventDefault(); const form = event.currentTarget; setPending(true); setError(""); setMessage("");
     try { const result = habit ? await updateHabit(habit.id, new FormData(form)) : await createHabit(new FormData(form)); if (result.error) setError(result.error); else { setMessage(t("Hábito guardado. Se aplicará al próximo plan.")); if (!habit) form.reset(); } }
     catch { setError(t("No se pudo guardar.")); } finally { setPending(false); }
@@ -24,6 +24,6 @@ export function HabitForm({ habit, categories = [] }: { habit?: Habit; categorie
     <fieldset className={frequencyMode === "DAYS" ? "text-sm" : "hidden"}><legend>{t("Días de la semana")}</legend><div className="mt-2 flex flex-wrap gap-2">{orderedWeekdays(preferences.weekStartsOn).map(index => <label key={index} className="flex items-center gap-1 rounded-lg border border-line px-2 py-2"><input name="daysOfWeek" type="checkbox" value={index} defaultChecked={habit ? habit.daysOfWeek.includes(index) : true} />{weekdayLabel(index, preferences.locale)}</label>)}</div></fieldset>
     <label className="flex items-center gap-2 text-sm"><input name="required" type="checkbox" defaultChecked={habit?.required} />{t("Es esencial para mi día")}</label>
     {error && <p role="alert" className="text-sm text-terracotta">{t(error)}</p>}{message && <p role="status" className="text-sm text-sage">{t(message)}</p>}
-    <button disabled={pending} className="rounded-full bg-sage py-2.5 text-white">{pending ? t("Guardando…") : habit ? t("Guardar cambios") : t("Añadir hábito")}</button>
+    <button disabled={pending} className="btn btn-primary">{pending ? t("Guardando…") : habit ? t("Guardar cambios") : t("Añadir hábito")}</button>
   </form>;
 }

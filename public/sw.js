@@ -1,5 +1,5 @@
 /* Public shell, authenticated day copy and an explicit session-bound change queue. */
-const CACHE_NAME = "afaire-public-v6";
+const CACHE_NAME = "afaire-public-v7";
 const DAY_CACHE = "afaire-day-v1";
 const CHANGE_CACHE = "afaire-changes-v1";
 const CHANGE_PATH = "/offline-changes";

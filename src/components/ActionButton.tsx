@@ -8,8 +8,9 @@ export function ActionButton({ action, children, confirm, className = "" }: { ac
   const { t } = useI18n();
   const [pending, setPending] = useState(false); const [error, setError] = useState("");
   const router = useRouter();
+  const tone = className.includes("text-terracotta") ? "btn-danger" : "";
   return <div className="inline-flex flex-col items-start">
-    <button disabled={pending} className={`rounded-full border border-line px-3 py-1.5 text-sm transition hover:border-sage ${className}`} onClick={async () => {
+    <button type="button" disabled={pending} aria-busy={pending} className={`btn min-h-10 px-3.5 ${tone} ${className}`} onClick={async () => {
       if (confirm && !window.confirm(t(confirm))) return;
       setPending(true); setError("");
       try { const result = await action(); if (result.error) setError(result.error); else router.refresh(); }

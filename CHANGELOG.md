@@ -1,5 +1,14 @@
 # Historial de cambios
 
+## Sin publicar · Interfaz renovada
+
+- Nueva identidad visual: paleta verde pino con azul índigo para citas fijas, tipografías Bricolage Grotesque y Figtree autoalojadas (`@fontsource-variable`, compatibles con la CSP) e iconos propios en SVG.
+- Modo oscuro revisado con superficies verde grisáceo, color de barra del sistema según el tema elegido (`theme-color` por cookie o por `prefers-color-scheme`) y selector Claro/Nocturno/Sistema con iconos.
+- Navegación adaptable: barra lateral en escritorio y barra de pestañas inferior en móvil y tableta, con márgenes para notch, isla dinámica y barra de gestos (`viewport-fit=cover`, `safe-area-inset`).
+- La agenda del día se muestra como línea de tiempo con horas a la izquierda, indicador del bloque en curso y progreso del bloque actual.
+- PWA: botón «Instalar app» en Chrome, Edge y Android, instrucciones para iPhone y iPad, aviso de nueva versión, búsqueda de actualizaciones al volver a la app, accesos directos a Semana y Hábitos, icono de Apple sin esquinas transparentes y página sin conexión con la nueva paleta (caché pública v7).
+- Móvil: campos a 16 px para evitar el zoom de iOS, objetivos táctiles de al menos 44 px, días de repetición como botones conmutables y semana compacta.
+
 ## 3.0.0 · 2026-10-09
 
 - Versión 3.0.0 en el paquete, lockfile, documentación y pie de página en español e inglés.
