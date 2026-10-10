@@ -3,10 +3,10 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/dal";
 import { withUserLock, actionError, DomainError } from "@/lib/transaction";
 import { z } from "zod";
-import { DateSchema } from "@/lib/definitions";
+import { DateSchema, TimeSchema } from "@/lib/definitions";
 import { addLocalDays, dateOnly, formatTime, ymdInZone } from "@/lib/time";
 import { insertSeries, replaceFollowingSeries } from "@/lib/series";
-import { assertFree, ownedEvent, parseEvent, setEventStatus } from "@/lib/calendar";
+import { assertFree, moveEventTo, ownedEvent, parseEvent, setEventStatus } from "@/lib/calendar";
 import type { EventStatus } from "../../generated/prisma/client";
 import type { ActionResult } from "@/lib/definitions";
 
@@ -43,6 +43,15 @@ export async function updateEventTimes(id: string, formData: FormData): Promise<
       await assertFree(tx, user.id, data.startsAt, data.endsAt, id, data.travelMinutes);
       await tx.event.update({ where: { id }, data: { ...data, locked: true, recoveryMinutes: 0, planningReason: "Horario elegido manualmente y fijado por ti." } });
     }); refresh(); return { ok: true };
+  } catch (error) { return actionError(error); }
+}
+export async function moveEvent(id: string, date: string, startTime: string): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    const target = z.object({ id: z.string().min(1).max(100), date: DateSchema, startTime: TimeSchema }).safeParse({ id, date, startTime });
+    if (!target.success) throw new DomainError("Revisa la fecha y la hora.");
+    await withUserLock(user.id, tx => moveEventTo(tx, user.id, user.timezone, target.data.id, target.data.date, target.data.startTime));
+    refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }
 export async function toggleEventDone(id: string) {

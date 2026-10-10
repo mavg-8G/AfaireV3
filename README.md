@@ -27,12 +27,28 @@ Las actividades sin espacio guardan un código de motivo en `DayPlan.details`, c
 - Guardar tareas con fecha límite y editarlas antes de programarlas.
 - Organizar hoy o una fecha futura; regenerar solo los bloques flexibles pendientes que todavía no empezaron.
 - Fijar, mover, empezar, completar u omitir bloques. Las citas, los bloques completados y el historial se conservan.
-- Consultar la semana y navegar por fechas.
+- Consultar la semana en una cuadrícula horaria, ver el día como lista o como horario y navegar por fechas.
+- Mover bloques pendientes arrastrándolos, con el teclado o con los botones rápidos de cada bloque.
 - Activar la generación diaria aunque el navegador esté cerrado.
 - Recuperar tareas flexibles pendientes de días anteriores sin duplicarlas.
 - Aprender horarios y días disponibles a partir del uso repetido, incluyendo franjas de madrugada. Puedes pausar o reiniciar el aprendizaje en Ajustes.
 
-El motor usa asignación determinista por huecos y no divide tareas. Si falta tiempo, muestra qué quedó pendiente y por qué. Mañana = 06:00–12:00, tarde = 12:00–18:00, noche = 18:00–24:00, siempre en la zona del usuario. La preferencia puede relajarse cuando no hay espacio en esa franja.
+El motor usa asignación determinista por huecos y solo divide las tareas que lo permiten explícitamente. Si falta tiempo, muestra qué quedó pendiente y por qué. Mañana = 06:00–12:00, tarde = 12:00–18:00, noche = 18:00–24:00, siempre en la zona del usuario. La preferencia puede relajarse cuando no hay espacio en esa franja.
+
+## Mover bloques y vista de horario
+
+Semana muestra una cuadrícula con una columna por día. Las franjas disponibles de cada día aparecen más claras, la línea roja marca la hora actual y los bloques que coinciden se reparten en carriles. El rango visible cubre la disponibilidad y los bloques de esos días con una hora de margen. En Hoy, «Lista / Horario» alterna entre la línea de tiempo con todas las opciones y la misma cuadrícula para un solo día (`?view=grid`).
+
+Solo se mueven los bloques pendientes que empiezan y terminan el mismo día:
+
+- **Ratón:** arrastra el bloque a otra hora o a otro día. El destino se ajusta a intervalos de 15 minutos.
+- **Táctil:** mantén pulsado el bloque un instante y arrástralo; un toque corto abre el día y un gesto rápido desplaza la página.
+- **Teclado:** con el foco en el bloque, las flechas arriba/abajo mueven 15 minutos (una hora con Mayús) y las flechas izquierda/derecha cambian de día. Enter confirma y Escape cancela; un lector de pantalla anuncia el destino antes de confirmar.
+- **Lista de Hoy:** «15 min antes», «15 min después» y «Mover a esta hora» en cada bloque pendiente.
+
+El bloque conserva su duración y queda fijo, igual que al editar su horario en el formulario. El servidor rechaza el cambio si coincide con otro bloque o su traslado, si la hora no existe o se repite por un cambio de horario, o si un hábito cambiaría de día. Para mover a una hora fuera del rango visible, cambiar la duración o editar citas que cruzan medianoche se usa «Opciones del bloque».
+
+La CSP prohíbe atributos `style`, así que las posiciones se sirven en una hoja con el nonce de la petición para el primer pintado y, una vez montada la página, se aplican con una hoja construida desde el CSSOM (`adoptedStyleSheets`).
 
 ## Disponibilidad que aprende con el uso
 
@@ -219,7 +235,7 @@ Las sesiones, consultas y mutaciones están aisladas por usuario. PostgreSQL imp
 
 La auditoría de dependencias de producción no presenta avisos conocidos en la comprobación realizada. El tooling de desarrollo conserva un aviso de `braces` sin versión corregida publicada; no se aplica un downgrade incompatible de Next.js para ocultarlo.
 
-Se dejan para siguientes iteraciones: arrastrar bloques, recurrencias sin fecha final o con intervalos avanzados, preferencias horarias personalizadas, turnos iniciales que cruzan medianoche, dividir tareas, correo de recuperación, ICS e integración con calendarios externos. Las franjas de madrugada aprendidas ya están implementadas. El [plan original](PLAN.md) documenta la evolución prevista; este README describe lo implementado.
+Se dejan para siguientes iteraciones: recurrencias sin fecha final o con intervalos avanzados, preferencias horarias personalizadas, turnos iniciales que cruzan medianoche, correo de recuperación, ICS e integración con calendarios externos. Las franjas de madrugada aprendidas ya están implementadas. El [plan original](PLAN.md) documenta la evolución prevista; este README describe lo implementado.
 
 ## Repetición, traslados y mediciones
 

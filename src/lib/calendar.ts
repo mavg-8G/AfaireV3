@@ -31,6 +31,18 @@ export async function ownedEvent(tx: Prisma.TransactionClient, userId: string, i
   if (!event) throw new DomainError("Evento no encontrado.");
   return event;
 }
+/** Moves a pending block to a new local start keeping its duration; like a manual edit, the block becomes fixed. */
+export async function moveEventTo(tx: Prisma.TransactionClient, userId: string, timezone: string, id: string, date: string, startTime: string) {
+  const event = await ownedEvent(tx, userId, id);
+  if (event.status !== "PENDING") throw new DomainError("Solo se pueden mover bloques pendientes.");
+  let startsAt: Date;
+  try { startsAt = combineLocalDateTime(date, startTime, timezone); } catch (error) { throw new DomainError(error instanceof Error ? error.message : "Horario inválido."); }
+  if (event.occurrenceId && event.planningDate?.getTime() !== dateOnly(date).getTime()) throw new DomainError("Un hábito pertenece a su día. Puedes mover su hora, pero no su fecha.");
+  if (startsAt.getTime() === event.startsAt.getTime()) return event;
+  const endsAt = new Date(startsAt.getTime() + event.endsAt.getTime() - event.startsAt.getTime());
+  await assertFree(tx, userId, startsAt, endsAt, id, event.travelMinutes);
+  return tx.event.update({ where: { id }, data: { startsAt, endsAt, planningDate: dateOnly(date), locked: true, recoveryMinutes: 0, planningReason: "Horario elegido manualmente y fijado por ti." } });
+}
 export async function setEventStatus(tx: Prisma.TransactionClient, userId: string, id: string, status: EventStatus, options: { now?: Date; postpone?: boolean } = {}) {
   const now = options.now ?? new Date();
   const event = await ownedEvent(tx, userId, id);

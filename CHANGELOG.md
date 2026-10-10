@@ -7,6 +7,8 @@
 - Navegación adaptable: barra lateral en escritorio y barra de pestañas inferior en móvil y tableta, con márgenes para notch, isla dinámica y barra de gestos (`viewport-fit=cover`, `safe-area-inset`).
 - La agenda del día se muestra como línea de tiempo con horas a la izquierda, indicador del bloque en curso y progreso del bloque actual.
 - PWA: botón «Instalar app» en Chrome, Edge y Android, instrucciones para iPhone y iPad, aviso de nueva versión, búsqueda de actualizaciones al volver a la app, accesos directos a Semana y Hábitos, icono de Apple sin esquinas transparentes y página sin conexión con la nueva paleta (caché pública v7).
+- Semana con cuadrícula horaria: siete columnas con las citas y bloques en su hora, disponibilidad de cada día resaltada, línea de la hora actual y carriles para bloques que coinciden. En Hoy, el selector Lista/Horario muestra la misma cuadrícula para un día.
+- Mover bloques pendientes sin abrir el formulario: arrastrar con ratón, mantener pulsado y arrastrar en pantallas táctiles, o usar el teclado (flechas, Mayús para una hora, Enter confirma y Escape cancela). En la lista, cada bloque pendiente tiene «15 min antes», «15 min después» y «Mover a esta hora». El bloque conserva su duración, queda fijo y se rechaza si coincide con otro; los hábitos no cambian de día.
 - Móvil: campos a 16 px para evitar el zoom de iOS, objetivos táctiles de al menos 44 px, días de repetición como botones conmutables y semana compacta.
 
 ## 3.0.0 · 2026-10-09

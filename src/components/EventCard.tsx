@@ -9,6 +9,8 @@ import type { Event } from "../generated/prisma/client";
 import { deleteEvent, lockEvent, toggleEventDone, updateEventTimes, changeEventStatus, deleteFollowingEvents, saveActualMinutes } from "@/app/actions/events";
 import { formatTime, ymdInZone } from "@/lib/time";
 import { ActionButton } from "./ActionButton";
+import { BlockMover } from "./BlockMover";
+import { hmMinutes } from "@/lib/time-grid";
 export function EventCard({ event, timezone }: { event: Event & { series?: EventSeries | null }; timezone: string; date?: string }) {
   const { t, preferences } = useI18n();
   const done = event.status === "DONE"; const skipped = event.status === "SKIPPED";
@@ -18,7 +20,7 @@ export function EventCard({ event, timezone }: { event: Event & { series?: Event
   const tone = done || skipped ? "line" : event.locked ? "fixed" : "sage";
   const dot = { line: "border-line-strong bg-paper", fixed: "border-fixed bg-fixed", sage: "border-sage bg-card" }[tone];
   const stripe = { line: "before:bg-line-strong", fixed: "before:bg-fixed", sage: "before:bg-sage" }[tone];
-  return <li className="relative grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-6 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
+  return <li id={`event-${event.id}`} className="relative grid scroll-mt-28 [&:target>article]:ring-2 [&:target>article]:ring-sage grid-cols-[3.5rem_minmax(0,1fr)] gap-x-6 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
     <div className={`pt-4 text-right tabular-nums ${done || skipped ? "text-muted" : ""}`}>
       <time dateTime={event.startsAt.toISOString()} className="block text-[15px] font-semibold leading-none">{displayTime(event.startsAt, timezone, preferences)}</time>
       <time dateTime={event.endsAt.toISOString()} className="mt-1.5 block text-xs text-muted">{displayTime(event.endsAt, timezone, preferences)}</time>
@@ -30,6 +32,7 @@ export function EventCard({ event, timezone }: { event: Event & { series?: Event
       {!skipped && <ActionButton action={toggleEventDone.bind(null, event.id)} className={done ? "" : "btn-primary"}>{done ? t("Reabrir") : t("Hecho ✓")}</ActionButton>}
     </div>
     {event.chunkIndex != null && <p className="mt-2 text-xs text-sage">{t("Fragmento")} {event.chunkIndex}/{event.chunkCount} · {t("La tarea se completa al terminar todos los fragmentos.")}</p>}
+    {event.status === "PENDING" && <BlockMover id={event.id} date={ymdInZone(event.startsAt, timezone)} minute={hmMinutes(formatTime(event.startsAt, timezone))} />}
     <details className="mt-3 border-t border-line pt-1 text-sm"><summary className="text-sage">{t("¿Por qué este bloque está aquí?")}</summary><p className="mt-2 leading-relaxed text-muted">{t(event.planningReason ?? (event.seriesId ? t("Cita generada según tu regla de repetición; conserva el horario de la zona de la serie.") : event.source === "MANUAL" ? t("Cita con el horario elegido por ti. El planificador reserva su tiempo y el traslado.") : t("Este bloque se creó antes de guardar explicaciones. Al volver a organizar el día, los bloques flexibles pendientes tendrán una explicación.")))}</p></details>
     {!skipped && <details className="text-sm"><summary className="text-muted hover:text-ink">{t("Opciones del bloque")}</summary>
       <div className="my-3 flex flex-wrap gap-2">
