@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/LocaleProvider";
 import { displayClock } from "@/lib/locale";
 import { moveEvent } from "@/app/actions/events";
-import { GRID_STEP, clampStart, minuteHm, snapMinute, type GridDay, type GridItem } from "@/lib/time-grid";
+import { GRID_MIN_BLOCK, GRID_STEP, clampStart, minuteHm, snapMinute, type GridDay, type GridItem } from "@/lib/time-grid";
 
 type Slot = { day: number; start: number };
 type Gesture = { item: GridItem; pointerId: number; x: number; y: number; grab: number; active: boolean; touch: boolean; timer?: ReturnType<typeof setTimeout>; target: Slot };
@@ -31,12 +31,13 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
   }, [css]);
   useLayoutEffect(() => {
     if (!drag || !dragged || typeof CSSStyleSheet === "undefined" || !("adoptedStyleSheets" in document)) return;
-    const top = ((drag.start - range.start) / span) * 100;
-    const height = ((dragged.end - dragged.start) / span) * 100;
+    const shown = Math.max(dragged.end - dragged.start, GRID_MIN_BLOCK);
+    const top = ((Math.min(drag.start, range.end - shown) - range.start) / span) * 100;
+    const height = (shown / span) * 100;
     const sheet = new CSSStyleSheet(); sheet.replaceSync(`.tg-preview{top:${top}%;height:${height}%}`);
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     return () => { document.adoptedStyleSheets = document.adoptedStyleSheets.filter(value => value !== sheet); };
-  }, [drag, dragged, range.start, span]);
+  }, [drag, dragged, range.start, range.end, span]);
   // On narrow screens the week scrolls sideways; start with today in view.
   useEffect(() => {
     const column = columns.current[days.findIndex(day => day.isToday)]; const first = columns.current[0];
@@ -101,7 +102,7 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
           {nowDay === index && <div aria-hidden="true" className="tg-now pointer-events-none absolute inset-x-0 z-10 border-t-2 border-terracotta" />}
           {items.filter(item => item.day === index).map(item => {
             const moving = drag?.id === item.id;
-            return <button key={item.cls} type="button" data-event={item.id} aria-disabled={pending && moving ? true : undefined}
+            return <button key={item.cls} type="button" data-event={item.id} title={`${item.title} · ${clock(item.start)}–${clock(item.end)}`} aria-disabled={pending && moving ? true : undefined}
               aria-label={`${item.title}, ${clock(item.start)}–${clock(item.end)}, ${t(item.locked ? "Fijo" : "Flexible")}${item.done ? `, ${t("Completado ✓")}` : ""}${item.movable ? `. ${t("Flechas para mover, Enter para abrir.")}` : ""}`}
               className={`${item.cls} absolute inset-x-0.5 z-[5] flex min-h-0 select-none flex-col items-stretch justify-start overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm [-webkit-touch-callout:none] ${item.locked ? "border-fixed bg-fixed-soft" : "border-sage bg-sage-soft"} ${item.active ? "ring-1 ring-sage" : ""} ${item.done ? "opacity-60" : ""} ${moving ? "opacity-40" : ""} ${item.movable ? "cursor-grab active:cursor-grabbing" : ""}`}
               onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } router.push(`/?date=${day.date}#event-${item.id}`); }}

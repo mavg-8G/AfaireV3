@@ -3,7 +3,7 @@ import type { DayOverride, Event } from "../generated/prisma/client";
 import { availabilityWindows } from "@/lib/availability";
 import { displayDay, type Preferences } from "@/lib/locale";
 import { calendarDayBounds, dateOnly } from "@/lib/time";
-import { assignLanes, gridClass, gridCss, gridRange, minuteInDay, type GridDay, type GridItem } from "@/lib/time-grid";
+import { GRID_MIN_BLOCK, assignLanes, gridClass, gridCss, gridRange, minuteInDay, type GridDay, type GridItem } from "@/lib/time-grid";
 import { TimeGridBoard } from "./TimeGridBoard";
 
 type Profile = Parameters<typeof availabilityWindows>[0];
@@ -18,7 +18,7 @@ export async function TimeGrid({ profile, timezone, preferences, dates, today, n
     availabilityWindows(profile, date, timezone, override).forEach((window, index) => windows.push({ cls: `tg-w-${day}-${index}`, day, start: minuteInDay(window.start, bounds, timezone), end: minuteInDay(window.end, bounds, timezone) }));
     const visible = events.filter(event => !["CANCELLED", "SKIPPED"].includes(event.status) && event.startsAt < bounds.end && event.endsAt > bounds.start)
       .map(event => ({ event, start: minuteInDay(event.startsAt, bounds, timezone), end: minuteInDay(event.endsAt, bounds, timezone) })).filter(value => value.end > value.start);
-    const lanes = assignLanes(visible.map(value => ({ id: value.event.id, start: value.start, end: value.end })));
+    const lanes = assignLanes(visible.map(value => ({ id: value.event.id, start: value.start, end: Math.max(value.end, value.start + GRID_MIN_BLOCK) })));
     for (const { event, start, end } of visible) items.push({
       id: event.id, cls: gridClass(event.id, day), title: event.title, day, start, end, ...lanes.get(event.id)!,
       locked: event.locked, done: event.status === "DONE", active: event.status === "IN_PROGRESS", kind: event.source,
@@ -28,6 +28,6 @@ export async function TimeGrid({ profile, timezone, preferences, dates, today, n
   const range = gridRange([...windows, ...items].flatMap(value => [value.start, value.end]));
   const todayIndex = dates.indexOf(today); const nowMinute = todayIndex < 0 ? -1 : minuteInDay(now, calendarDayBounds(today, timezone), timezone);
   const nowDay = nowMinute > range.start && nowMinute < range.end ? todayIndex : null;
-  const css = gridCss(range, [...windows, ...items, ...(nowDay == null ? [] : [{ cls: "tg-now", start: nowMinute, end: nowMinute + 1 }])]);
+  const css = gridCss(range, [...windows, ...items.map(item => ({ ...item, min: GRID_MIN_BLOCK })), ...(nowDay == null ? [] : [{ cls: "tg-now", start: nowMinute, end: nowMinute + 1 }])]);
   return <TimeGridBoard days={days} items={items} windows={windows.map(({ cls, day }) => ({ cls, day }))} range={range} nowDay={nowDay} css={css} nonce={nonce} />;
 }

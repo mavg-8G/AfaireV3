@@ -211,6 +211,6 @@ Las pruebas del motor y de concurrencia son prioritarias por el riesgo de perder
 
 ## 12. Ampliaciones posteriores
 
-Pendientes actuales: recurrencias avanzadas o sin fecha final, exportar/importar ICS e integración con Google Calendar. Las citas recurrentes simples, la división opcional de tareas largas, Web Push, PWA con copia offline de hoy y estadísticas semanales ya están implementadas; su configuración y límites figuran en el README. La IA podrá ayudar a interpretar texto o sugerir duraciones cuando las reglas de agenda estén consolidadas.
+El estado y la prioridad de las siguientes ampliaciones se mantienen en la [hoja de ruta](ROADMAP.md). Las citas recurrentes simples, la división opcional de tareas largas, Web Push, la PWA con copia offline de hoy, la cuadrícula horaria y la revisión semanal ya están implementadas; su configuración y límites figuran en el README.
 
 La primera versión se considera terminada cuando varios usuarios pueden gestionar y generar su agenda privada, el worker funciona sin sesiones abiertas y el despliegue Docker conserva y permite recuperar los datos.

@@ -1,4 +1,4 @@
-# Afaire 2
+# Afaire
 
 Guía de pruebas de agenda, avisos, capacidad del planificador y sesiones: consulta [TESTING.md](TESTING.md).
 
@@ -12,7 +12,7 @@ En Ajustes, «Prioridad por urgencia» permite activar el bonus y cambiar sus um
 
 Las actividades sin espacio guardan un código de motivo en `DayPlan.details`, con propuestas verificadas para dividir, acortar, mover el vencimiento o liberar un bloque flexible concreto. Los botones aplican la decisión y recalculan el espacio conservando los bloques existentes. Si cambió la versión del plan, empezó el bloque o la propuesta ya no cabe, se rechaza sin cambios parciales. La migración `20261009110000_task_chunks_urgency` añade estos campos y permite varios fragmentos activos por tarea; se aplica con `npm run db:migrate`.
 
-Última actualización: 8 de octubre de 2026. Consulta el [historial de cambios](CHANGELOG.md) para ver las novedades y los requisitos de actualización.
+Última actualización: 10 de octubre de 2026. Consulta el [historial de cambios](CHANGELOG.md) para ver las novedades y los requisitos de actualización, y la [hoja de ruta](ROADMAP.md) para el trabajo pendiente.
 
 ## Lo que puedes hacer
 
@@ -29,6 +29,7 @@ Las actividades sin espacio guardan un código de motivo en `DayPlan.details`, c
 - Fijar, mover, empezar, completar u omitir bloques. Las citas, los bloques completados y el historial se conservan.
 - Consultar la semana en una cuadrícula horaria, ver el día como lista o como horario y navegar por fechas.
 - Mover bloques pendientes arrastrándolos, con el teclado o con los botones rápidos de cada bloque.
+- Revisar cada semana el cumplimiento, el tiempo completado, los hábitos, los chequeos diarios y los bloques por recuperar.
 - Activar la generación diaria aunque el navegador esté cerrado.
 - Recuperar tareas flexibles pendientes de días anteriores sin duplicarlas.
 - Aprender horarios y días disponibles a partir del uso repetido, incluyendo franjas de madrugada. Puedes pausar o reiniciar el aprendizaje en Ajustes.
@@ -49,6 +50,12 @@ Solo se mueven los bloques pendientes que empiezan y terminan el mismo día:
 El bloque conserva su duración y queda fijo, igual que al editar su horario en el formulario. El servidor rechaza el cambio si coincide con otro bloque o su traslado, si la hora no existe o se repite por un cambio de horario, o si un hábito cambiaría de día. Para mover a una hora fuera del rango visible, cambiar la duración o editar citas que cruzan medianoche se usa «Opciones del bloque».
 
 La CSP prohíbe atributos `style`, así que las posiciones se sirven en una hoja con el nonce de la petición para el primer pintado y, una vez montada la página, se aplican con una hoja construida desde el CSSOM (`adoptedStyleSheets`).
+
+## Revisión semanal
+
+Revisión abre la semana anterior por defecto; si una cuenta nueva no tiene bloques allí, muestra la semana en curso. Puedes navegar entre semanas sin alterar los planes. El resumen presenta los bloques cerrados, el tiempo dedicado por tipo de actividad, el cumplimiento de hábitos y las notas de los chequeos de fin de día. Cada jornada enlaza a su agenda.
+
+El porcentaje de cumplimiento compara bloques hechos con bloques hechos, omitidos, pospuestos o cuyo horario ya terminó; los bloques futuros no reducen el porcentaje. El tiempo completado usa minutos reales cuando se registraron y, de lo contrario, la duración programada. La comparación entre tiempo real y estimado incluye únicamente bloques con medición. Las sugerencias señalan actividades sin espacio, bloques sin resolver, días con menor cumplimiento y hábitos difíciles de sostener; son orientativas y no cambian automáticamente la agenda.
 
 ## Disponibilidad que aprende con el uso
 
@@ -229,13 +236,13 @@ Todas las sesiones previas de esa cuenta quedan invalidadas. La recuperación y 
 
 ## Estado y límites
 
-Validación local de esta actualización: 45 pruebas unitarias, 21 pruebas de integración con PostgreSQL y 20 comprobaciones HTTP aprobadas. También pasan TypeScript, ESLint, el build de producción y el empaquetado del worker. Web Push se verifica con un transporte simulado; la recepción real en dispositivos requiere configurar VAPID. Docker Compose y el bloque para tu Caddy existente se entregan configurados; la ejecución de contenedores debe validarse en un host con Docker disponible.
+Validación local de esta actualización: las cifras y el resultado de las pruebas se registran en el [historial de cambios](CHANGELOG.md). Web Push se verifica con un transporte simulado; la recepción real en dispositivos requiere configurar VAPID. Docker Compose y el bloque para tu Caddy existente se entregan configurados; la ejecución de contenedores debe validarse en un host con Docker disponible.
 
 Las sesiones, consultas y mutaciones están aisladas por usuario. PostgreSQL impide solapamientos y vínculos de agenda entre cuentas. Los intentos de acceso se limitan mediante contadores persistentes. El despliegue inicial se configura por invitación.
 
 La auditoría de dependencias de producción no presenta avisos conocidos en la comprobación realizada. El tooling de desarrollo conserva un aviso de `braces` sin versión corregida publicada; no se aplica un downgrade incompatible de Next.js para ocultarlo.
 
-Se dejan para siguientes iteraciones: recurrencias sin fecha final o con intervalos avanzados, preferencias horarias personalizadas, turnos iniciales que cruzan medianoche, correo de recuperación, ICS e integración con calendarios externos. Las franjas de madrugada aprendidas ya están implementadas. El [plan original](PLAN.md) documenta la evolución prevista; este README describe lo implementado.
+Se dejan para siguientes iteraciones: recurrencias sin fecha final o con intervalos avanzados, preferencias horarias personalizadas, turnos iniciales que cruzan medianoche, correo de recuperación, ICS e integración con calendarios externos. Las franjas de madrugada aprendidas ya están implementadas. La [hoja de ruta](ROADMAP.md) prioriza lo pendiente; el [plan original](PLAN.md) conserva las decisiones iniciales.
 
 ## Repetición, traslados y mediciones
 
