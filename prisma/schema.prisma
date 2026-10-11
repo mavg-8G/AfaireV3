@@ -400,6 +400,7 @@ model CategoryBudget {
   weeklyMinutes Int
   preferredWindow PreferredWindow @default(ANY)
   active Boolean @default(true)
+  fillBlocks Boolean @default(true)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
   tasks Task[]
   habits Habit[]

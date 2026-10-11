@@ -108,7 +108,7 @@ export async function generateDayInTransaction(tx: Prisma.TransactionClient, use
     const categoryGoals = await categoryTargets(tx, userId, day, now, protectedEvents, signal.extraSlack);
     const fillLimits = Object.fromEntries(categoryGoals.map(goal => [goal.category.id, goal.todayMinutes]));
     for (const item of items) if (item.categoryId && categoryGoals.some(goal => goal.category.id === item.categoryId && goal.remaining > 0)) item.categoryWeight = 1;
-    for (const goal of categoryGoals) items.push(...categoryFillItems(goal.category, goal.todayMinutes).map(item => ({ ...item, preferred: preferredBounds(day, user.timezone, goal.category.preferredWindow === "ANY" ? signal.preferredWindow ?? "ANY" : goal.category.preferredWindow) })));
+    for (const goal of categoryGoals) if (goal.category.fillBlocks) items.push(...categoryFillItems(goal.category, goal.todayMinutes).map(item => ({ ...item, preferred: preferredBounds(day, user.timezone, goal.category.preferredWindow === "ANY" ? signal.preferredWindow ?? "ANY" : goal.category.preferredWindow) })));
     const expiredKeys = new Set(tasks.filter(task => task.seriesId && task.dueDate && task.dueDate < date).map(task => `task:${task.id}`));
     const deferred = items.filter(item => expiredKeys.has(item.key) || (override?.essentialOnly && !item.required && item.priority !== 1 && (!item.dueDate || item.dueDate > dateOnly(addLocalDays(day, 1)))));
     const eligible = items.filter(item => item.durationMinutes > 0 && !deferred.includes(item) && !options.excludeKeys?.some(key => item.key === key || item.key.startsWith(key + ":")));

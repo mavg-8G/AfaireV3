@@ -2,6 +2,7 @@
 
 ## Sin publicar · Interfaz renovada
 
+- Categorías: casilla «Reservar bloques de relleno» por categoría. Desmarcada, el objetivo semanal solo cuenta hábitos, tareas y eventos propios y no se crean bloques con el nombre de la categoría. Migración aditiva `20261011100000_category_fill_blocks`; las categorías existentes conservan el relleno.
 - Nueva identidad visual: paleta verde pino con azul índigo para citas fijas, tipografías Bricolage Grotesque y Figtree autoalojadas (`@fontsource-variable`, compatibles con la CSP) e iconos propios en SVG.
 - Modo oscuro revisado con superficies verde grisáceo, color de barra del sistema según el tema elegido (`theme-color` por cookie o por `prefers-color-scheme`) y selector Claro/Nocturno/Sistema con iconos.
 - Navegación adaptable: barra lateral en escritorio y barra de pestañas inferior en móvil y tableta, con márgenes para notch, isla dinámica y barra de gestos (`viewport-fit=cover`, `safe-area-inset`).

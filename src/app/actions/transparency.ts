@@ -38,13 +38,14 @@ export async function adjustPostponedTask(taskId: string, input: unknown) {
   const user=await requireUser();
   try { const parsed=ResolutionSchema.safeParse(input);if(!parsed.success)throw new DomainError("Revisa la duración, los pasos y la persona delegada.");await withUserLock(user.id,tx=>resolveProcrastination(tx,user.id,taskId,parsed.data));refresh();return {ok:true,error:undefined}; }catch(error){return actionError(error);}
 }
-const BudgetSchema=z.object({name:z.string().trim().min(1).max(80),weeklyMinutes:z.coerce.number().int().min(5).max(10080),preferredWindow:z.enum(["MORNING","AFTERNOON","EVENING","ANY"])});
+const BudgetSchema=z.object({name:z.string().trim().min(1).max(80),weeklyMinutes:z.coerce.number().int().min(5).max(10080),preferredWindow:z.enum(["MORNING","AFTERNOON","EVENING","ANY"]),fillBlocks:z.boolean()});
+const pendingFill=(userId:string,categoryId:string)=>({userId,categoryId,taskId:null,habitId:null,source:"AUTO" as const,locked:false,status:"PENDING" as const,startsAt:{gt:new Date()}});
 export async function saveCategoryBudget(id: string | null, form: FormData) {
   const user=await requireUser();
   try {
-    const parsed=BudgetSchema.safeParse({...Object.fromEntries(form),weeklyMinutes:Math.round(Number(form.get("weeklyHours"))*60)});if(!parsed.success)throw new DomainError("Indica nombre, horas semanales y franja. Mínimo 5 minutos; máximo 168 horas.");
+    const parsed=BudgetSchema.safeParse({...Object.fromEntries(form),weeklyMinutes:Math.round(Number(form.get("weeklyHours"))*60),fillBlocks:form.get("fillBlocks")==="on"});if(!parsed.success)throw new DomainError("Indica nombre, horas semanales y franja. Mínimo 5 minutos; máximo 168 horas.");
     await withUserLock(user.id,async tx=>{
-      if(id){const budget=await tx.categoryBudget.findFirst({where:{id,userId:user.id}});if(!budget)throw new DomainError("Categoría no encontrada.");await tx.categoryBudget.update({where:{id},data:parsed.data});}
+      if(id){const budget=await tx.categoryBudget.findFirst({where:{id,userId:user.id}});if(!budget)throw new DomainError("Categoría no encontrada.");await tx.categoryBudget.update({where:{id},data:parsed.data});if(budget.fillBlocks&&!parsed.data.fillBlocks)await tx.event.updateMany({where:pendingFill(user.id,id),data:{status:"CANCELLED"}});}
       else await tx.categoryBudget.create({data:{userId:user.id,...parsed.data}});
     });refresh();return {ok:true,error:undefined};
   }catch(error){return actionError(error);}
@@ -54,6 +55,6 @@ export async function toggleCategoryBudget(id: string) {
   try{await withUserLock(user.id,async tx=>{
     const category=await tx.categoryBudget.findFirst({where:{id,userId:user.id}});if(!category)throw new DomainError("Categoría no encontrada.");
     await tx.categoryBudget.update({where:{id},data:{active:!category.active}});
-    if(category.active)await tx.event.updateMany({where:{userId:user.id,categoryId:id,taskId:null,habitId:null,source:"AUTO",locked:false,status:"PENDING",startsAt:{gt:new Date()}},data:{status:"CANCELLED"}});
+    if(category.active)await tx.event.updateMany({where:pendingFill(user.id,id),data:{status:"CANCELLED"}});
   });refresh();return {ok:true,error:undefined};}catch(error){return actionError(error);}
 }

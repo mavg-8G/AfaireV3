@@ -96,6 +96,13 @@ test("feedback changes spacing, unspecified times and estimates without altering
   const category=await prisma.categoryBudget.create({data:{userId:user.id,name:"Focus signal",weeklyMinutes:120}});
   await generateDay(user.id,day,{now});const reserved=await prisma.event.findMany({where:{userId:user.id,categoryId:category.id,status:"PENDING"}});assert.ok(reserved.length);assert.ok(reserved.every(e=>e.startsAt.getUTCHours()>=12));const learned=await prisma.event.findFirstOrThrow({where:{taskId:task.id,status:"PENDING"}});assert.equal(learned.estimatedMinutes,50);assert.ok(learned.startsAt.getUTCHours()>=12);assert.match(learned.planningReason!,/señales de sobrecarga/);assert.equal((await prisma.task.findUniqueOrThrow({where:{id:task.id}})).durationMinutes,40);
 });
+test("categories without filler blocks only count their own tasks and habits",async()=>{
+  const user=await account(),category=await prisma.categoryBudget.create({data:{userId:user.id,name:"Meals",weeklyMinutes:300,fillBlocks:false}});
+  await prisma.task.create({data:{userId:user.id,title:"Lunch",categoryId:category.id,durationMinutes:30}});
+  await generateDay(user.id,day,{now});const events=await prisma.event.findMany({where:{userId:user.id,categoryId:category.id}});
+  assert.equal(events.length,1);assert.ok(events[0].taskId);
+  const progress=await weeklyCategoryProgress(prisma,user.id,day,now);assert.equal(progress[0].reserved,30);assert.equal(progress[0].missing,270);
+});
 test("category objectives reserve unmet time, count tasks once and recover missed reservations",async()=>{
   const user=await account(),category=await prisma.categoryBudget.create({data:{userId:user.id,name:"Study",weeklyMinutes:300}});
   await prisma.task.create({data:{userId:user.id,title:"Study task",categoryId:category.id,durationMinutes:30}});
