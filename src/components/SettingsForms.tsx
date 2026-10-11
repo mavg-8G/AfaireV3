@@ -3,35 +3,48 @@ import { displayClock, orderedWeekdays, weekdayLabel } from "@/lib/locale";
 
 
 import { useI18n } from "@/components/LocaleProvider";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import type { Availability } from "../generated/prisma/client";
-import { changePassword } from "@/app/actions/auth";
 import { updateSettings, resetLearning } from "@/app/actions/settings";
-import { COMMON_TIMEZONES, type AuthFormState } from "@/lib/definitions";
+import { COMMON_TIMEZONES } from "@/lib/definitions";
 import { HABIT_TEMPLATES } from "@/lib/templates";
 import { availabilitySummary } from "@/lib/availability";
 import { ActionButton } from "./ActionButton";
 type Profile = { urgencyEnabled?: boolean; urgencySoonDays?: number; urgencyNearDays?: number; slackPercent?: number; longBlockMinutes?: number; recoveryMinutes?: number; name: string; timezone: string; dayStart: string; dayEnd: string; bufferMinutes: number; autoPlan: boolean; carryOver: boolean; adaptiveAvailability: boolean; adaptiveDurations: boolean; focusWindow: string; availability: Availability[] };
+
+function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return <section className="min-w-0 space-y-4 py-6 first:pt-0 last:pb-0">
+    <div><h2 className="text-xl">{title}</h2>{hint && <p className="mt-1 text-xs leading-relaxed text-muted">{hint}</p>}</div>
+    {children}
+  </section>;
+}
+
+function Toggle({ name, checked, title, hint }: { name: string; checked: boolean; title: string; hint?: string }) {
+  return <label className="flex items-start gap-3 text-sm"><input className="mt-0.5" name={name} type="checkbox" defaultChecked={checked} /><span><span className="block font-medium">{title}</span>{hint && <span className="mt-0.5 block text-xs leading-relaxed text-muted">{hint}</span>}</span></label>;
+}
+
 export function SettingsForms({ profile, onboarding = false }: { profile: Profile; onboarding?: boolean }) {
   const { t, preferences } = useI18n();
   const [message, setMessage] = useState(""); const [error, setError] = useState(false); const [pending, setPending] = useState(false);
-  const [pwdState, pwdAction, pwdPending] = useActionState(changePassword, {} as AuthFormState); const router = useRouter();
-  return <div className={`grid grid-cols-1 gap-6 ${onboarding ? "mx-auto max-w-3xl" : "xl:grid-cols-[minmax(0,1fr)_340px]"}`}>
-    <form aria-busy={pending} className="min-w-0 space-y-6 rounded-3xl border border-line bg-card p-5 sm:p-8" onSubmit={async event => {
-      event.preventDefault(); setPending(true); setMessage("");
-      try { const result = await updateSettings(new FormData(event.currentTarget)); setError(Boolean(result.error)); setMessage(result.error ?? t("Ajustes guardados.")); if (!result.error) { if (onboarding) router.push("/"); router.refresh(); } }
-      catch { setError(true); setMessage(t("No se pudo guardar. Inténtalo de nuevo.")); } finally { setPending(false); }
-    }}>
-      <div><p className="eyebrow">{onboarding ? t("Tu espacio, a tu ritmo") : t("Preferencias")}</p><h1 className="mt-2 text-[2.5rem] sm:text-5xl">{onboarding ? t("Dale forma a tu día") : t("Ajustes")}</h1><p className="mt-3 text-sm leading-relaxed text-muted">{t("Define cuándo tienes tiempo. Afaire organiza tus actividades dentro de ese horario.")}</p></div>
-      <input type="hidden" name="dayStart" value={profile.dayStart} /><input type="hidden" name="dayEnd" value={profile.dayEnd} />{onboarding && <input type="hidden" name="onboarding" value="true" />}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="text-sm">{t("Nombre")}<input name="name" required defaultValue={profile.name} maxLength={80} className="field" /></label>
-        <label className="text-sm">{t("Zona horaria")}<input name="timezone" required defaultValue={profile.timezone} list="timezones" className="field" /><datalist id="timezones">{[...new Set([...COMMON_TIMEZONES, profile.timezone])].map(tz => <option key={tz} value={tz} />)}</datalist></label>
-      </div>
-      <fieldset className="min-w-0"><legend className="font-medium">{t("Horarios iniciales")}</legend><p className="mt-1 text-xs text-muted">{t("Son el punto de partida. Con el aprendizaje activo, se ajustan según tus patrones de uso.")}</p>
-        <div className="mt-4 space-y-2">{orderedWeekdays(preferences.weekStartsOn).map(weekday => {
+  const router = useRouter();
+  return <form aria-busy={pending} className={`min-w-0 rounded-3xl border border-line bg-card p-5 sm:p-8 ${onboarding ? "mx-auto max-w-3xl" : ""}`} onSubmit={async event => {
+    event.preventDefault(); setPending(true); setMessage("");
+    try { const result = await updateSettings(new FormData(event.currentTarget)); setError(Boolean(result.error)); setMessage(result.error ?? t("Ajustes guardados.")); if (!result.error) { if (onboarding) router.push("/"); router.refresh(); } }
+    catch { setError(true); setMessage(t("No se pudo guardar. Inténtalo de nuevo.")); } finally { setPending(false); }
+  }}>
+    {onboarding && <div className="mb-6"><p className="eyebrow">{t("Tu espacio, a tu ritmo")}</p><h1 className="mt-2 text-[2.5rem] sm:text-5xl">{t("Dale forma a tu día")}</h1><p className="mt-3 text-sm leading-relaxed text-muted">{t("Define cuándo tienes tiempo. Afaire organiza tus actividades dentro de ese horario.")}</p></div>}
+    <input type="hidden" name="dayStart" value={profile.dayStart} /><input type="hidden" name="dayEnd" value={profile.dayEnd} />{onboarding && <input type="hidden" name="onboarding" value="true" />}
+    <div className="divide-y divide-line">
+      <Section title={t("Perfil")}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="text-sm">{t("Nombre")}<input name="name" required defaultValue={profile.name} maxLength={80} className="field" /></label>
+          <label className="text-sm">{t("Zona horaria")}<input name="timezone" required defaultValue={profile.timezone} list="timezones" className="field" /><datalist id="timezones">{[...new Set([...COMMON_TIMEZONES, profile.timezone])].map(tz => <option key={tz} value={tz} />)}</datalist></label>
+        </div>
+      </Section>
+
+      <Section title={t("Horario semanal")} hint={t("Son el punto de partida. Con el aprendizaje activo, se ajustan según tus patrones de uso.")}>
+        <div className="space-y-2">{orderedWeekdays(preferences.weekStartsOn).map(weekday => {
           const label = weekdayLabel(weekday, preferences.locale);
           const row = profile.availability.find(item => item.weekday === weekday);
           return <div key={weekday} className="grid grid-cols-[3.5rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 rounded-xl bg-paper/60 px-2 py-2 sm:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)] sm:gap-3 sm:px-3">
@@ -41,21 +54,43 @@ export function SettingsForms({ profile, onboarding = false }: { profile: Profil
             {row?.learningReason && <p className="col-span-3 pb-1 text-xs leading-relaxed text-sage">{profile.adaptiveAvailability ? t(`Aprendido: ${availabilitySummary(profile, weekday, value => displayClock(value, preferences))}`) : t("Aprendizaje en pausa")}<span className="mt-1 block text-muted">{t(row.learningReason)}</span></p>}
           </div>;
         })}</div>
-      </fieldset>
-      <label className="block text-sm">{t("Mi franja de mayor foco")}<select name="focusWindow" defaultValue={profile.focusWindow} className="field"><option value="MORNING">{t("Mañana · 06–12")}</option><option value="AFTERNOON">{t("Tarde · 12–18")}</option><option value="EVENING">{t("Noche · 18–24")}</option><option value="LEARNED">{t("Aprender del uso · mañana hasta tener datos")}</option></select><span className="mt-1 block text-xs text-muted">{t("Las tareas profundas sin una preferencia propia se colocan primero aquí. El uso de la app es una aproximación a tus horas de foco.")}</span></label><label className="flex items-start gap-3 text-sm"><input name="adaptiveDurations" type="checkbox" defaultChecked={profile.adaptiveDurations} /><span>{t("Ajustar duraciones con los tiempos reales")}<span className="mt-1 block text-xs text-muted">{t("Desde tres mediciones del mismo hábito o tareas con el mismo título; ajuste máximo del 25 % por plan. Registra el tiempo al completar un bloque.")}</span></span></label><label className="block text-sm">{t("Descanso mínimo entre bloques · minutos")}<input name="bufferMinutes" type="number" required min={0} max={60} defaultValue={profile.bufferMinutes} className="field max-w-28" /></label>
-      <fieldset className="grid gap-3 rounded-xl border border-line p-4 sm:grid-cols-3"><legend className="text-sm font-medium">{t("Holgura para imprevistos")}</legend><label className="text-sm">{t("Reservar · % libre")}<input name="slackPercent" type="number" min={0} max={50} defaultValue={profile.slackPercent??0} required className="field" /></label><label className="text-sm">{t("Bloque largo desde · min")}<input name="longBlockMinutes" type="number" min={30} max={240} defaultValue={profile.longBlockMinutes??90} required className="field" /></label><label className="text-sm">{t("Recuperación extra · min")}<input name="recoveryMinutes" type="number" min={0} max={60} defaultValue={profile.recoveryMinutes??0} required className="field" /></label><p className="text-xs text-muted sm:col-span-3">{t("Reserva parte del tiempo libre después de citas y descansos. Un 10–20 % deja margen; 0 desactiva la reserva. El descanso extra se añade tras bloques automáticos largos.")}</p></fieldset>
-      <label className="flex items-start gap-3 rounded-xl border border-sage/30 bg-sage/5 p-4 text-sm"><input className="mt-1" name="adaptiveAvailability" type="checkbox" defaultChecked={profile.adaptiveAvailability} /><span><strong className="block font-medium">{t("Aprender mi disponibilidad con el uso")}</strong><span className="mt-1 block text-xs leading-relaxed text-muted">{t("Afaire observa cuándo abres o utilizas la agenda, incluida la madrugada. Las franjas repetidas en tres fechas distintas ayudan a ajustar el horario. Afinar o desactivar días requiere al menos tres semanas de uso frecuente. Se guardan solo fecha y franja horaria durante 28 días.")}</span></span></label>
-      <fieldset className="grid gap-3 rounded-xl border border-line p-4 sm:grid-cols-2"><legend className="text-sm font-medium">{t("Prioridad por urgencia")}</legend><label className="flex items-center gap-2 text-sm sm:col-span-2"><input name="urgencyEnabled" type="checkbox" defaultChecked={profile.urgencyEnabled ?? true} />{t("Aumentar prioridad al acercarse el vencimiento")}</label><label className="text-sm">{t("+1 nivel cuando faltan · días")}<input name="urgencySoonDays" type="number" required min={0} max={365} defaultValue={profile.urgencySoonDays ?? 3} className="field" /></label><label className="text-sm">{t("+2 niveles cuando faltan · días")}<input name="urgencyNearDays" type="number" required min={0} max={365} defaultValue={profile.urgencyNearDays ?? 1} className="field" /></label><p className="text-xs text-muted sm:col-span-2">{t("Las vencidas alcanzan prioridad alta. Los hábitos esenciales siguen primero; los empates se resuelven por fecha límite. Cada bloque explica su prioridad base y efectiva.")}</p></fieldset>
-      <label className="flex items-start gap-3 rounded-xl border border-line p-4 text-sm"><input className="mt-1" name="autoPlan" type="checkbox" defaultChecked={profile.autoPlan} /><span><strong className="block font-medium">{t("Organizar mi día automáticamente")}</strong><span className="mt-1 block text-xs leading-relaxed text-muted">{t("El plan se genera al empezar tu horario, aunque no abras la web. Un plan existente se conserva.")}</span></span></label>
-      <label className="flex items-start gap-3 text-sm"><input name="carryOver" type="checkbox" defaultChecked={profile.carryOver} /><span>{t("Recuperar tareas flexibles pendientes de días anteriores")}<span className="mt-1 block text-xs text-muted">{t("Las citas fijas y los hábitos de ayer no se trasladan.")}</span></span></label>
-      {onboarding && <fieldset><legend className="font-medium">{t("Empieza con algunas rutinas")}</legend><p className="mt-1 text-xs text-muted">{t("Opcionales. Puedes editarlas y añadir otras después.")}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{HABIT_TEMPLATES.map(template => <label key={template.key} className="flex items-center gap-3 rounded-xl border border-line p-3 text-sm"><input type="checkbox" name="templates" value={template.key} /><span>{t(template.title)}<span className="block text-xs text-muted">{template.durationMinutes} min · {template.required ? t("Esencial") : t("Opcional")}</span></span></label>)}</div></fieldset>}
-      {message && <p role={error ? "alert" : "status"} className={`text-sm ${error ? "text-terracotta" : "text-sage"}`}>{t(message)}</p>}
+        <div className="space-y-3 rounded-xl bg-sage/5 p-4">
+          <Toggle name="adaptiveAvailability" checked={profile.adaptiveAvailability} title={t("Aprender mi disponibilidad con el uso")} hint={t("Afaire observa cuándo abres o utilizas la agenda, incluida la madrugada. Las franjas repetidas en tres fechas distintas ayudan a ajustar el horario. Afinar o desactivar días requiere al menos tres semanas de uso frecuente. Se guardan solo fecha y franja horaria durante 28 días.")} />
+          {!onboarding && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sage/20 pt-3"><p className="max-w-md text-xs leading-relaxed text-muted">{t("Los horarios aprendidos se aplican a los próximos planes. Tus citas y planes existentes mantienen su lugar.")}</p><ActionButton action={resetLearning} confirm={t("¿Reiniciar lo aprendido y volver a tus horarios iniciales?")}>{t("Reiniciar aprendizaje")}</ActionButton></div>}
+        </div>
+      </Section>
+
+      <Section title={t("Organización del día")}>
+        <Toggle name="autoPlan" checked={profile.autoPlan} title={t("Organizar mi día automáticamente")} hint={t("El plan se genera al empezar tu horario, aunque no abras la web. Un plan existente se conserva.")} />
+        <Toggle name="carryOver" checked={profile.carryOver} title={t("Recuperar tareas flexibles pendientes de días anteriores")} hint={t("Las citas fijas y los hábitos de ayer no se trasladan.")} />
+        <Toggle name="adaptiveDurations" checked={profile.adaptiveDurations} title={t("Ajustar duraciones con los tiempos reales")} hint={t("Desde tres mediciones del mismo hábito o tareas con el mismo título; ajuste máximo del 25 % por plan. Registra el tiempo al completar un bloque.")} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="text-sm">{t("Mi franja de mayor foco")}<select name="focusWindow" defaultValue={profile.focusWindow} className="field"><option value="MORNING">{t("Mañana · 06–12")}</option><option value="AFTERNOON">{t("Tarde · 12–18")}</option><option value="EVENING">{t("Noche · 18–24")}</option><option value="LEARNED">{t("Aprender del uso · mañana hasta tener datos")}</option></select><span className="mt-1 block text-xs text-muted">{t("Las tareas profundas sin una preferencia propia se colocan primero aquí. El uso de la app es una aproximación a tus horas de foco.")}</span></label>
+          <label className="text-sm">{t("Descanso mínimo entre bloques · minutos")}<input name="bufferMinutes" type="number" required min={0} max={60} defaultValue={profile.bufferMinutes} className="field" /></label>
+        </div>
+      </Section>
+
+      <Section title={t("Holgura para imprevistos")} hint={t("Reserva parte del tiempo libre después de citas y descansos. Un 10–20 % deja margen; 0 desactiva la reserva. El descanso extra se añade tras bloques automáticos largos.")}>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <label className="text-sm">{t("Reservar · % libre")}<input name="slackPercent" type="number" min={0} max={50} defaultValue={profile.slackPercent ?? 0} required className="field" /></label>
+          <label className="text-sm">{t("Bloque largo desde · min")}<input name="longBlockMinutes" type="number" min={30} max={240} defaultValue={profile.longBlockMinutes ?? 90} required className="field" /></label>
+          <label className="text-sm">{t("Recuperación extra · min")}<input name="recoveryMinutes" type="number" min={0} max={60} defaultValue={profile.recoveryMinutes ?? 0} required className="field" /></label>
+        </div>
+      </Section>
+
+      <Section title={t("Prioridad por urgencia")} hint={t("Las vencidas alcanzan prioridad alta. Los hábitos esenciales siguen primero; los empates se resuelven por fecha límite. Cada bloque explica su prioridad base y efectiva.")}>
+        <Toggle name="urgencyEnabled" checked={profile.urgencyEnabled ?? true} title={t("Aumentar prioridad al acercarse el vencimiento")} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="text-sm">{t("+1 nivel cuando faltan · días")}<input name="urgencySoonDays" type="number" required min={0} max={365} defaultValue={profile.urgencySoonDays ?? 3} className="field" /></label>
+          <label className="text-sm">{t("+2 niveles cuando faltan · días")}<input name="urgencyNearDays" type="number" required min={0} max={365} defaultValue={profile.urgencyNearDays ?? 1} className="field" /></label>
+        </div>
+      </Section>
+
+      {onboarding && <Section title={t("Empieza con algunas rutinas")} hint={t("Opcionales. Puedes editarlas y añadir otras después.")}><div className="grid gap-2 sm:grid-cols-2">{HABIT_TEMPLATES.map(template => <label key={template.key} className="flex items-center gap-3 rounded-xl border border-line p-3 text-sm"><input type="checkbox" name="templates" value={template.key} /><span>{t(template.title)}<span className="block text-xs text-muted">{template.durationMinutes} min · {template.required ? t("Esencial") : t("Opcional")}</span></span></label>)}</div></Section>}
+    </div>
+    <div className="floating-above-tabbar sticky z-10 -mx-2 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card/95 p-2 pl-4 shadow-lg backdrop-blur sm:-mx-4">
+      <p role={error ? "alert" : "status"} className={`min-w-0 flex-1 text-sm ${error ? "text-terracotta" : message ? "text-sage" : "text-muted"}`}>{message ? t(message) : t("Los cambios se aplican a los próximos planes.")}</p>
       <button disabled={pending} className="btn btn-primary text-sm">{pending ? t("Guardando…") : onboarding ? t("Abrir mi agenda →") : t("Guardar preferencias")}</button>
-    </form>
-    {!onboarding && <aside className="space-y-5"><form aria-busy={pending} action={pwdAction} className="space-y-4 rounded-2xl border border-line bg-card p-5 shadow-sm">
-      <h2 className="text-2xl">{t("Contraseña")}</h2><label className="block text-sm">{t("Actual")}<input name="currentPassword" type="password" required autoComplete="current-password" className="field" /></label><label className="block text-sm">{t("Nueva")}<input name="newPassword" type="password" required minLength={10} maxLength={72} autoComplete="new-password" className="field" /></label>
-      {pwdState.message && <p role="status" className="text-sm">{t(pwdState.message)}</p>}{pwdState.errors && <p role="alert" className="text-sm text-terracotta">{Object.values(pwdState.errors).flat().filter(Boolean).map(value => t(value!)).join(" ")}</p>}
-      {pwdState.ok ? <Link href="/login" className="text-sm text-sage underline">{t("Volver a iniciar sesión")}</Link> : <button disabled={pwdPending} className="btn text-sm">{pwdPending ? t("Guardando…") : t("Cambiar contraseña")}</button>}
-    </form><div className="space-y-4 rounded-2xl bg-sage/10 p-5 text-sm leading-relaxed text-sage"><p>{t("Los horarios aprendidos se aplican a los próximos planes. Tus citas y planes existentes mantienen su lugar.")}</p><ActionButton action={resetLearning} confirm={t("¿Reiniciar lo aprendido y volver a tus horarios iniciales?")}>{t("Reiniciar aprendizaje")}</ActionButton></div></aside>}
-  </div>;
+    </div>
+  </form>;
 }

@@ -1,10 +1,10 @@
 # Hoja de ruta de Afaire
 
-Actualizada el 10 de octubre de 2026. Este documento recoge prioridades de producto, sin fechas de entrega comprometidas. El [README](README.md) describe las funciones disponibles y [PLAN.md](PLAN.md) conserva el plan inicial.
+Actualizada el 11 de octubre de 2026. Este documento recoge prioridades de producto, sin fechas de entrega comprometidas. El [README](README.md) describe las funciones disponibles y [PLAN.md](PLAN.md) conserva el plan inicial.
 
 ## Estado actual
 
-El código incluye planificación automática, citas y tareas recurrentes simples, división opcional de tareas, hábitos, disponibilidad adaptable, vista horaria de día y semana, movimiento de bloques pendientes, revisión semanal, avisos Web Push y una copia editable de hoy sin conexión. La versión del paquete es 3.0.0; publicar código en GitHub y actualizar el VPS son pasos separados.
+El código incluye planificación automática, citas y tareas recurrentes simples, división opcional de tareas, hábitos, disponibilidad adaptable, vista horaria de día y semana, movimiento de bloques pendientes, revisión semanal, ajustes organizados por pestañas con contraseña y sesiones en el menú de cuenta, avisos Web Push y una copia editable de hoy sin conexión. La versión del paquete es 3.0.0; publicar código en GitHub y actualizar el VPS son pasos separados.
 
 ## Próximas prioridades
 

@@ -2,6 +2,8 @@
 
 ## Sin publicar · Interfaz renovada
 
+- Ajustes rediseñado en pestañas (Horario y plan, Categorías, Días especiales, Avisos y General), cada una con su dirección y cargando solo sus datos. El formulario de horario se divide en secciones con un botón de guardar fijo; el estado de la automatización muestra lo esencial y deja métricas e historial en «Detalles técnicos».
+- Menú de cuenta con «Cambiar contraseña» en un diálogo y «Sesiones activas» en una página propia (`/sessions`); ya no aparecen dentro de Ajustes.
 - Categorías: casilla «Reservar bloques de relleno» por categoría. Desmarcada, el objetivo semanal solo cuenta hábitos, tareas y eventos propios y no se crean bloques con el nombre de la categoría. Migración aditiva `20261011100000_category_fill_blocks`; las categorías existentes conservan el relleno.
 - Nueva identidad visual: paleta verde pino con azul índigo para citas fijas, tipografías Bricolage Grotesque y Figtree autoalojadas (`@fontsource-variable`, compatibles con la CSP) e iconos propios en SVG.
 - Modo oscuro revisado con superficies verde grisáceo, color de barra del sistema según el tema elegido (`theme-color` por cookie o por `prefers-color-scheme`) y selector Claro/Nocturno/Sistema con iconos.
@@ -12,7 +14,7 @@
 - Mover bloques pendientes sin abrir el formulario: arrastrar con ratón, mantener pulsado y arrastrar en pantallas táctiles, o usar el teclado (flechas, Mayús para una hora, Enter confirma y Escape cancela). En la lista, cada bloque pendiente tiene «15 min antes», «15 min después» y «Mover a esta hora». El bloque conserva su duración, queda fijo y se rechaza si coincide con otro; los hábitos no cambian de día.
 - Los bloques cortos mantienen una altura legible en la cuadrícula. Revisión semanal presenta cumplimiento de bloques cerrados, tiempo dedicado, hábitos, chequeos diarios, comparación con la semana anterior y sugerencias sin modificar la agenda.
 - Móvil: campos a 16 px para evitar el zoom de iOS, objetivos táctiles de al menos 44 px, días de repetición como botones conmutables y semana compacta.
-- Validación local del 10 de octubre: 116 pruebas unitarias, 86 de integración con PostgreSQL y 44 comprobaciones HTTP aprobadas; también pasan TypeScript, ESLint y el build de producción.
+- Validación local del 11 de octubre: 116 pruebas unitarias, 87 de integración con PostgreSQL y 49 comprobaciones HTTP aprobadas; también pasan TypeScript, ESLint, el build de producción y el del worker.
 
 ## 3.0.0 · 2026-10-09
 

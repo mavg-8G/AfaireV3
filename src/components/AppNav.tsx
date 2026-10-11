@@ -8,7 +8,8 @@ import { removePushSubscription } from "@/app/actions/notifications";
 import { signOut } from "next-auth/react";
 import { ThemePicker } from "./ThemeProvider";
 import { InstallButton } from "./PwaProvider";
-import { BrandMark, HabitIcon, InboxIcon, KeyIcon, LogoutIcon, ReviewIcon, SettingsIcon, TodayIcon, WeekIcon } from "./Icons";
+import { PasswordDialog } from "./PasswordDialog";
+import { BrandMark, DeviceIcon, HabitIcon, InboxIcon, KeyIcon, LogoutIcon, ReviewIcon, SettingsIcon, TodayIcon, WeekIcon } from "./Icons";
 
 const links = [
   { href: "/", label: "Hoy", Icon: TodayIcon },
@@ -26,8 +27,10 @@ function isCurrent(path: string, href: string) {
 function AccountMenu({ name }: { name: string }) {
   const { t } = useI18n();
   const account = useRef<HTMLDetailsElement>(null); const [leaving, setLeaving] = useState(false); const [error, setError] = useState("");
+  const password = useRef<HTMLDialogElement>(null); const [passwordSession, setPasswordSession] = useState(0);
   const initials = name.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? "").join("").toLocaleUpperCase();
   function closeAccount() { if (account.current) account.current.open = false; }
+  function openPassword() { closeAccount(); setPasswordSession(session => session + 1); password.current?.showModal(); }
   useEffect(() => {
     const outside = (event: PointerEvent) => { if (account.current && !account.current.contains(event.target as Node)) account.current.open = false; };
     const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && account.current?.open) { account.current.open = false; account.current.querySelector("summary")?.focus(); } };
@@ -43,7 +46,7 @@ function AccountMenu({ name }: { name: string }) {
     } catch { setError(t("No se pudo cerrar sesión. Inténtalo de nuevo.")); setLeaving(false); }
   }
 
-  return <details ref={account} className="account-menu relative">
+  return <><details ref={account} className="account-menu relative">
     <summary aria-label={t(`Cuenta de ${name}`)} className="flex size-11 items-center justify-center rounded-full border border-line bg-card text-sm font-semibold text-sage transition hover:border-sage lg:size-auto lg:w-full lg:justify-start lg:gap-3 lg:rounded-2xl lg:border-transparent lg:bg-transparent lg:p-2 lg:hover:bg-card">
       <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-sage-soft text-sage lg:size-9">{initials || "A"}</span>
       <span className="hidden min-w-0 flex-1 truncate text-left text-sm font-medium text-ink lg:block">{name}</span>
@@ -52,12 +55,15 @@ function AccountMenu({ name }: { name: string }) {
       <div><p className="text-xs text-muted">{t("Tu cuenta")}</p><p className="mt-0.5 break-words text-sm font-semibold">{name}</p></div>
       <ThemePicker />
       <div className="space-y-1 border-t border-line pt-3">
-        <Link onClick={closeAccount} href="/settings#sessions" className="flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm hover:bg-sunken"><KeyIcon className="size-[18px] text-muted" />{t("Sesiones activas")}</Link>
+        <button type="button" onClick={openPassword} className="flex w-full items-center gap-3 rounded-xl px-2 text-left text-sm hover:bg-sunken"><KeyIcon className="size-[18px] text-muted" />{t("Cambiar contraseña")}</button>
+        <Link onClick={closeAccount} href="/sessions" className="flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm hover:bg-sunken"><DeviceIcon className="size-[18px] text-muted" />{t("Sesiones activas")}</Link>
         <button disabled={leaving} onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-2 text-left text-sm text-terracotta hover:bg-sunken"><LogoutIcon className="size-[18px]" />{t(leaving ? "Cerrando sesión…" : "Cerrar sesión")}</button>
       </div>
       {error && <p role="alert" className="text-xs text-terracotta">{error}</p>}
     </div>
-  </details>;
+  </details>
+  {/* Outside the menu: a closed <details> would hide the modal along with its content. */}
+  <PasswordDialog dialogRef={password} session={passwordSession} /></>;
 }
 
 export function AppNav({ name }: { name: string }) {

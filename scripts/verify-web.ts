@@ -102,13 +102,19 @@ try {
   for (const path of ["/", "/habits", "/review", "/settings", "/week", "/check-in"]) {
     const page = await fetch(new URL(path, base), { headers: { cookie: cookieHeader(authA.jar) } });
     check("Página autenticada disponible: " + path, () => assert.equal(page.status, 200));
-    const content = await page.text();
+    let content = await page.text();
+    // Settings is split into tabs and sessions live on their own page; checks read them together.
+    if (path === "/settings") for (const extra of ["/settings?tab=categories", "/settings?tab=special-days", "/settings?tab=notifications", "/settings?tab=general", "/sessions"]) {
+      const tabPage = await fetch(new URL(extra, base), { headers: { cookie: cookieHeader(authA.jar) } });
+      check("Página autenticada disponible: " + extra, () => assert.equal(tabPage.status, 200));
+      content += await tabPage.text();
+    }
     if (path === "/settings") check("Métricas de planificación y push visibles", () => { assert.match(content, /Métricas de operación/); assert.match(content, /Días con tareas sin espacio/); assert.match(content, /Tiempo medio de generación/); assert.match(content, /Tasa de fallos push/); });
     if (path === "/settings") check("Silencio y observabilidad push visibles", () => { assert.match(content, /Horas de silencio/); assert.match(content, /name="quietStart"/); assert.match(content, /Proveedor push: HTTP 503/); assert.match(content, /Vacaciones y días especiales/); assert.match(content, /name="slackPercent"/); assert.match(content, /Plantilla de semana/); });
     if (path === "/settings") check("Header compacto y activación push coherente con el servidor", () => {
       const header = /<header[^>]*>([\s\S]*?)<\/header>/.exec(content)?.[1] ?? "";
       assert.match(header, /aria-label="Cuenta de Prueba HTTP"/); assert.match(header, /<details/);
-      assert.match(header, /href="\/settings#sessions"/); assert.match(content, /id="sessions"/);
+      assert.match(header, /href="\/sessions"/); assert.match(header, /Cambiar contraseña/); assert.match(content, /id="sessions"/);
       assert.doesNotMatch(header, /UN DÍA A LA VEZ/);
       const configured = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT);
       if (configured) { assert.match(content, /Activa este dispositivo y acepta el permiso/); assert.doesNotMatch(content, /Los avisos aún no están habilitados/); }
@@ -138,7 +144,7 @@ try {
   await prisma.user.update({ where: { id: ids[0] }, data: { locale: "en", hourFormat: "12", weekStartsOn: 0 } });
   const englishAgenda = await fetch(new URL("/", base), { headers: { cookie: cookieHeader(authA.jar) } }); const englishAgendaHtml = await englishAgenda.text();
   check("Preferencias de cuenta prevalecen sobre cookies y formatos de inputs se conservan", () => { assert.match(englishAgendaHtml, /lang="en"/); assert.match(englishAgendaHtml, /Difficult day/); assert.match(englishAgendaHtml, /Skip to content/); assert.match(englishAgendaHtml, /id="main-content"/); assert.match(englishAgendaHtml, /[AP]M/); const inputs = [...englishAgendaHtml.matchAll(/<input[^>]*type="time"[^>]*>/g)]; assert.ok(inputs.length); for (const [input] of inputs) { const value = /value="([^"]*)"/.exec(input)?.[1]; if (value) assert.match(value, /^\d{2}:\d{2}$/); } });
-  const englishSettings = await fetch(new URL("/settings", base), { headers: { cookie: cookieHeader(secondA.jar) } }); const englishSettingsHtml = await englishSettings.text();
+  const englishSettingsHtml = (await Promise.all(["/sessions", "/settings?tab=general"].map(async path => (await fetch(new URL(path, base), { headers: { cookie: cookieHeader(secondA.jar) } })).text()))).join("");
   check("Sesiones y preferencias visibles en el segundo dispositivo", () => { assert.match(englishSettingsHtml, /Active sessions/); assert.match(englishSettingsHtml, /Sign out other devices/); assert.match(englishSettingsHtml, /First day of the week/); });
   await prisma.deviceSession.update({ where: { id: otherA.id }, data: { revokedAt: new Date() } });
   const revoked = await fetch(new URL("/inbox", base), { headers: { cookie: cookieHeader(secondA.jar) }, redirect: "manual" });
