@@ -5,8 +5,18 @@ import { stateHash } from "../src/lib/plan-history";
 import { feedbackPolicy, feedbackDuration } from "../src/lib/plan-feedback";
 import { scheduleInWindows, type Schedulable } from "../src/lib/scheduler";
 import { categoryMinutes } from "../src/lib/category-budgets";
+import { summarizeWeek } from "../src/lib/weekly-review";
 import { calendarDayBounds, addLocalDays, startOfLocalWeek } from "../src/lib/time";
 function signal(date:string,reason:string,values:Partial<PlanFeedback>={}):PlanFeedback{return {id:date+reason,userId:"u",source:"EXPLICIT",date:new Date(date+"T00:00Z"),reason,preferredWindow:null,taskId:null,habitId:null,suggestedMinutes:null,updatedAt:new Date(date+"T12:00Z"),...values};}
+
+test("minimum completions without measured minutes do not credit the full session duration", () => {
+ const start = new Date("2030-04-15T08:00Z"), end = new Date("2030-04-15T09:00Z");
+ const event = { startsAt: start, endsAt: end, status: "DONE", actualMinutes: null, minimal: true, taskId: null, habitId: "reading" } as Event;
+ assert.equal(categoryMinutes(event, start, end), 0);
+ assert.equal(summarizeWeek([event], ["2030-04-15"], () => "2030-04-15", end).total.doneMinutes, 0);
+ assert.equal(categoryMinutes({ ...event, actualMinutes: 5 }, start, end), 5);
+ assert.equal(summarizeWeek([{ ...event, actualMinutes: 5 }], ["2030-04-15"], () => "2030-04-15", end).total.doneMinutes, 5);
+});
 test("history hashes survive JSONB property order and timestamp serialization",()=>{const a={second:{z:1,a:new Date("2030-04-15T00:00Z")},first:[1,2]};assert.equal(stateHash(a),stateHash({first:[1,2],second:{a:"2030-04-15T00:00:00.000Z",z:1}}));assert.notEqual(stateHash([1,2]),stateHash([2,1]));});
 test("explicit signals deduplicate days, cap slack, prefer the latest time and bound estimate corrections",()=>{
  const rows=Array.from({length:8},(_,i)=>signal(`2030-04-${String(i+10).padStart(2,"0")}`,"OVERLOADED"));rows.push(rows[0],signal("2030-04-17","BAD_TIME",{preferredWindow:"EVENING"}),signal("2030-04-18","BAD_TIME",{preferredWindow:"AFTERNOON"}));

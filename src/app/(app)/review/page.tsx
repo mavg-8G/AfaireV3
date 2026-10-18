@@ -24,7 +24,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const bounds = weekBounds(start); const previous = weekBounds(addLocalDays(start, -7)); const current = start === monday;
   const [events, before, habits, completed, plans, checkIns] = await Promise.all([
     prisma.event.findMany({ where: { userId: user.id, startsAt: { gte: bounds.start, lt: bounds.end } }, orderBy: { startsAt: "asc" } }),
-    prisma.event.findMany({ where: { userId: user.id, startsAt: { gte: previous.start, lt: previous.end } }, select: { status: true, startsAt: true, endsAt: true, taskId: true, habitId: true, actualMinutes: true } }),
+    prisma.event.findMany({ where: { userId: user.id, startsAt: { gte: previous.start, lt: previous.end } }, select: { status: true, startsAt: true, endsAt: true, taskId: true, habitId: true, actualMinutes: true, minimal: true } }),
     prisma.habit.findMany({ where: { userId: user.id, archived: false }, orderBy: { createdAt: "asc" } }),
     prisma.habitOccurrence.findMany({ where: { userId: user.id, status: "DONE" }, select: { habitId: true, date: true } }),
     prisma.dayPlan.findMany({ where: { userId: user.id, date: { gte: dateOnly(start), lte: dateOnly(end) } } }),

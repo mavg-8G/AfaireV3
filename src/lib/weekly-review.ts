@@ -1,4 +1,4 @@
-export type ReviewEvent = { status: string; startsAt: Date; endsAt: Date; taskId: string | null; habitId: string | null; actualMinutes: number | null };
+export type ReviewEvent = { status: string; startsAt: Date; endsAt: Date; taskId: string | null; habitId: string | null; actualMinutes: number | null; minimal?: boolean };
 export type ReviewOutcome = "DONE" | "SKIPPED" | "POSTPONED" | "MISSED" | "UPCOMING";
 export type ReviewKind = "HABIT" | "TASK" | "FIXED";
 export type ReviewDay = { date: string; planned: number; done: number; open: number; upcoming: number; plannedMinutes: number; doneMinutes: number };
@@ -22,7 +22,7 @@ export function summarizeWeek(events: ReviewEvent[], dates: string[], dayOf: (va
     if (!outcome || !day) continue;
     const minutes = scheduledMinutes(event);
     day.planned++; day.plannedMinutes += minutes;
-    if (outcome === "DONE") { const spent = event.actualMinutes ?? minutes; day.done++; day.doneMinutes += spent; kinds[reviewKind(event)] += spent; }
+    if (outcome === "DONE") { const spent = event.actualMinutes ?? (event.minimal ? 0 : minutes); day.done++; day.doneMinutes += spent; kinds[reviewKind(event)] += spent; }
     else if (outcome === "UPCOMING") day.upcoming++;
     else day.open++;
   }

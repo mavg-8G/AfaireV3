@@ -6,6 +6,11 @@ import { TaskFormSchema } from "../src/lib/definitions";
 import { scheduleItems, type Schedulable } from "../src/lib/scheduler";
 const task = { title: "Report", categoryId: "work", learningMatch: "TITLE", learningKey: null as string | null };
 const measurement = (actualMinutes: number, estimate = 100, extra: Partial<DurationMeasurement> = {}): DurationMeasurement => ({ title: " Report ", taskId: "old", task, actualMinutes, estimatedMinutes: estimate, startsAt: new Date("2030-04-15T08:00Z"), endsAt: new Date("2030-04-15T09:40Z"), chunkIndex: null, ...extra });
+
+test("minimum sessions never shorten the learned duration of a full habit", () => {
+  const history = [measurement(15, 30, { habitId: "reading", minimal: true }), measurement(30, 30, { habitId: "reading", minimal: false })];
+  assert.deepEqual(validDurationMeasurements(history).map(row => row.actualMinutes), [30]);
+});
 test("rejects accidental completions below 10%, comparing each historical estimate and including the boundary", () => {
   const history = [measurement(1), measurement(9), measurement(10), measurement(35), measurement(35), measurement(35), measurement(8, 50), measurement(0), measurement(NaN), measurement(481), measurement(35,100,{chunkIndex:1})];
   assert.deepEqual(taskMeasurements(task, history), [10,35,35,35,8]);

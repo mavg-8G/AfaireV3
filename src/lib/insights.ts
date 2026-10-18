@@ -19,6 +19,10 @@ export function habitStats(days: number[], start: string, end: string, created: 
   }
   return { streak, expected: expected.length, done: expected.filter(day => completed.has(day)).length };
 }
+// Rows are each habit's latest past occurrence; pending means unregistered, not confirmed failure.
+export function missedLastTime<T extends { status: string }>(latest: T[]) {
+  return latest.filter(row => row.status === "SKIPPED" || row.status === "PENDING");
+}
 export function learnedFocus(samples: { minute: number }[], fallback: string) {
   const counts = [0, 0, 0];
   for (const { minute } of samples) counts[minute >= 360 && minute < 720 ? 0 : minute >= 720 && minute < 1080 ? 1 : 2]++;

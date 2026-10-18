@@ -5,6 +5,7 @@ import { freeMinutes, type Schedulable } from "./scheduler";
 export function categoryMinutes(event: Event, start: Date, end: Date) {
   const overlap = Math.max(0, Math.min(end.getTime(), event.endsAt.getTime()) - Math.max(start.getTime(), event.startsAt.getTime()));
   const scheduled = overlap / 60000;
+  if (event.status === "DONE" && event.minimal && event.actualMinutes == null) return 0;
   return event.status === "DONE" && event.actualMinutes != null ? event.actualMinutes * overlap / Math.max(1, event.endsAt.getTime() - event.startsAt.getTime()) : scheduled;
 }
 export async function weeklyCategoryProgress(tx: Prisma.TransactionClient, userId: string, day: string, now = new Date()) {

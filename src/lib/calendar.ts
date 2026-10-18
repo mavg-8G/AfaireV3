@@ -48,7 +48,7 @@ export async function setEventStatus(tx: Prisma.TransactionClient, userId: strin
   const event = await ownedEvent(tx, userId, id);
   if (status === "SKIPPED" || options.postpone) await recordPostponement(tx, event, now);
   if (status === "PENDING") await assertFree(tx, userId, event.startsAt, event.endsAt, id, event.travelMinutes);
-  await tx.event.update({ where: { id }, data: { status, ...(status === "IN_PROGRESS" ? { startedAt: event.startedAt ?? now, actualMinutes: null } : status === "DONE" && event.startedAt ? { actualMinutes: Math.max(1, Math.min(480, Math.round((now.getTime() - event.startedAt.getTime()) / 60_000))) } : status === "PENDING" ? { startedAt: null, actualMinutes: null } : {}) } });
+  await tx.event.update({ where: { id }, data: { status, ...(status === "IN_PROGRESS" ? { startedAt: event.startedAt ?? now, actualMinutes: null } : status === "DONE" && event.startedAt ? { actualMinutes: Math.max(1, Math.min(480, Math.round((now.getTime() - event.startedAt.getTime()) / 60_000))) } : status === "PENDING" ? { startedAt: null, actualMinutes: null, minimal: false } : {}) } });
   if (event.occurrenceId) await tx.habitOccurrence.updateMany({ where: { id: event.occurrenceId, userId }, data: { status: status === "CANCELLED" ? "SKIPPED" : status } });
   if (event.taskId) {
     const task = await tx.task.findFirst({ where: { id: event.taskId, userId, archived: false }, include: { events: { where: { status: { in: ["DONE", "PENDING", "IN_PROGRESS"] } } } } });

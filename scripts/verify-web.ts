@@ -125,7 +125,13 @@ try {
     if (path === "/check-in") check("Chequeo de fin de día accesible y privado", () => { assert.match(content, /Qué pasó hoy/); assert.match(content, /Guardar chequeo del día/); assert.match(content, /name="mood"/); assert.match(page.headers.get("cache-control") ?? "", /no-store/); });
     if (path === "/settings") check("Objetivos por categoría configurables", () => { assert.match(content, /Presupuesto de tiempo por categoría/); assert.match(content, /name="weeklyHours"/); });
     if (path === "/") check("Chequeo y feedback disponibles desde la agenda", () => { assert.match(content, /href="\/check-in\?date=/); assert.match(content, /Este plan no me sirvió/); });
-    if (path === "/habits") check("Frecuencia semanal disponible", () => assert.match(content, /name="frequencyMode"/));
+    if (path === "/habits") {
+      check("Frecuencia semanal disponible", () => assert.match(content, /name="frequencyMode"/));
+      check("Versión mínima y plan si-entonces disponibles", () => {
+        assert.match(content, /name="minimumVersion"/);
+        assert.match(content, /name="plan"/);
+      });
+    }
   }
   for (const origin of ["https://evil.invalid", null]) {
     const headers: Record<string, string> = { cookie: cookieHeader(authA.jar) }; if (origin) headers.origin = origin;

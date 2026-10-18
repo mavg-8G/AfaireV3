@@ -1,4 +1,5 @@
 import { feedbackPolicy } from "@/lib/plan-feedback";
+import { missedLastTime } from "@/lib/insights";
 import { CategoryProgress } from "@/components/CategoryProgress";
 import { UnscheduledActions } from "@/components/UnscheduledActions";
 import { PlanHistory } from "@/components/PlanHistory";
@@ -38,18 +39,22 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const override = await prisma.dayOverride.findUnique({ where: { userId_date: { userId: user.id, date: dateOnly(date) } } });
   const windows = availabilityWindows(user, date, user.timezone, override);
   const [busyEvents, plan, inboxCount] = await Promise.all([
-    prisma.event.findMany({ where: { userId: user.id, status: { not: "CANCELLED" }, startsAt: { lt: addMinutesUtc(bounds.end, user.bufferMinutes + 180) }, endsAt: { gt: addMinutesUtc(bounds.start, -user.bufferMinutes - 180) } }, orderBy: { startsAt: "asc" }, include: { series: true } }),
+    prisma.event.findMany({ where: { userId: user.id, status: { not: "CANCELLED" }, startsAt: { lt: addMinutesUtc(bounds.end, user.bufferMinutes + 180) }, endsAt: { gt: addMinutesUtc(bounds.start, -user.bufferMinutes - 180) } }, orderBy: { startsAt: "asc" }, include: { series: true, habit: { select: { minimumVersion: true, plan: true } } } }),
     prisma.dayPlan.findUnique({ where: { userId_date: { userId: user.id, date: dateOnly(date) } } }),
     prisma.task.count({ where: { userId: user.id, archived: false, status: "INBOX" } }),
   ]);
   const events = busyEvents.filter(event => event.startsAt < bounds.end && event.endsAt > bounds.start);
   const free = date < today ? 0 : windows.flatMap(window => computeGaps(date === today ? new Date(Math.max(roundUp(now).getTime(), window.start.getTime())) : window.start, window.end, busyEvents.filter(e => e.status !== "SKIPPED"), user.bufferMinutes)).reduce((sum, gap) => sum + (gap.end.getTime() - gap.start.getTime()) / 60_000, 0);
+  const dueHabits = date === today ? [...new Set(events.filter(e => e.habitId && ["PENDING", "IN_PROGRESS"].includes(e.status)).map(e => e.habitId!))] : [];
+  // shortcut: only planned occurrences are seen; an unplanned due day is not counted as a miss.
+  const missed = dueHabits.length ? missedLastTime(await prisma.habitOccurrence.findMany({ where: { userId: user.id, habitId: { in: dueHabits }, date: { lt: dateOnly(today) }, status: { not: "CANCELLED" } }, orderBy: { date: "desc" }, distinct: ["habitId"], include: { habit: { select: { title: true, minimumVersion: true } } } })) : [];
   const active = events.filter(event => event.status !== "SKIPPED"); const done = active.filter(event => event.status === "DONE").length;
   const details = Array.isArray(plan?.details) ? plan.details as unknown as Unscheduled[] : [];
   return <div className="space-y-7">
     <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div className="min-w-0"><p className="eyebrow">{date === today ? t(`Hola, ${user.name.split(" ")[0]}`) : t("Tu agenda")}</p><h1 className="mt-2 text-[2.5rem] first-letter:uppercase sm:text-6xl">{displayDay(date, user.timezone, preferences)}</h1><p className="mt-3 text-sm text-muted">{override?.paused ? t("Planificador pausado") : override?.startTime ? `${displayClock(override.startTime, preferences)}–${displayClock(override.endTime!, preferences)}${t(" · horario temporal")}` : t(availabilitySummary(user, weekdayForDate(date), value => displayClock(value, preferences)))} · {user.timezone}</p>{user.adaptiveAvailability && <Link href="/settings" className="mt-1 inline-flex min-h-8 items-center text-xs font-semibold text-sage hover:underline">{t("Disponibilidad que aprende contigo ↗")}</Link>}</div><PlanButton date={date} existing={Boolean(plan)} disabled={date < today || !windows.length} /></div>
     <DateNavigator date={date} today={today} grid={grid} />
     {date === today && <NowBanner events={events} timezone={user.timezone} now={now} />}
+    {missed.length > 0 && <section aria-label={t("Retoma a tu ritmo")} className="space-y-1 rounded-2xl border border-sage bg-sage-soft p-4 text-sm">{missed.map(m => <p key={m.id}><strong>{m.date.toISOString().slice(0, 10) === addLocalDays(today, -1) ? t("Ayer") : t("La última vez")}</strong>{t(" no registraste como completado ")}«{m.habit.title}»{t(". Hoy tienes otra oportunidad.")}{m.habit.minimumVersion && <>{t(" Vale la versión mínima: ")}{m.habit.minimumVersion}.</>}</p>)}</section>}
     <PlanHistory userId={user.id} day={date} timezone={user.timezone} />
     <CategoryProgress userId={user.id} day={date} />
     {date <= today && date >= addLocalDays(today,-28) && <div className="grid items-start gap-3 sm:grid-cols-2"><Link href={`/check-in?date=${date}`} className="flex min-h-14 items-center rounded-2xl border border-line bg-card p-4 text-sm font-semibold text-sage shadow-sm transition hover:border-sage">{t("Chequeo de fin de día · ¿qué pasó hoy?")}</Link><PlanFeedbackForm day={date} events={events.filter(event=>event.taskId||event.habitId).map(event=>({id:event.id,title:event.title}))} /></div>}

@@ -54,13 +54,17 @@ export async function moveEvent(id: string, date: string, startTime: string): Pr
     refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }
-export async function toggleEventDone(id: string) {
+export async function toggleEventDone(id: string, minimal = false) {
   const user = await requireUser();
   try {
     await withUserLock(user.id, async tx => {
       const event = await ownedEvent(tx, user.id, id);
       if (["CANCELLED", "SKIPPED"].includes(event.status)) throw new DomainError("Este bloque ya fue retirado.");
-      await setEventStatus(tx, user.id, id, event.status === "DONE" ? "PENDING" : "DONE");
+      const reopen = event.status === "DONE";
+      if (minimal && (reopen || !event.habitId)) throw new DomainError("Estado inválido.");
+      if (minimal && !await tx.habit.findFirst({ where: { id: event.habitId!, userId: user.id, minimumVersion: { not: null } } })) throw new DomainError("Estado inválido.");
+      await setEventStatus(tx, user.id, id, reopen ? "PENDING" : "DONE");
+      if (minimal) await tx.event.update({ where: { id }, data: { minimal: true } });
     }); refresh(); return { ok: true };
   } catch (error) { return actionError(error); }
 }

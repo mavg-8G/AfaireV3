@@ -97,6 +97,7 @@ model Event {
   estimatedMinutes Int?
   planningReason String?
   recoveryMinutes Int @default(0)
+  minimal Boolean @default(false)
   habitId      String?
   habit        Habit?      @relation(fields: [habitId, userId], references: [id, userId], onDelete: NoAction)
   occurrenceId String?     @unique
@@ -128,6 +129,8 @@ model Habit {
   daysOfWeek      Int[]
   frequencyMode String @default("DAYS")
   weeklyTarget Int @default(3)
+  minimumVersion String?
+  plan String?
   active          Boolean         @default(true)
   archived        Boolean         @default(false)
   createdAt       DateTime        @default(now()) @db.Timestamptz(3)

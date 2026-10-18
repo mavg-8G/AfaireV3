@@ -12,7 +12,7 @@ En Ajustes › Horario y plan, «Prioridad por urgencia» permite activar el bon
 
 Las actividades sin espacio guardan un código de motivo en `DayPlan.details`, con propuestas verificadas para dividir, acortar, mover el vencimiento o liberar un bloque flexible concreto. Los botones aplican la decisión y recalculan el espacio conservando los bloques existentes. Si cambió la versión del plan, empezó el bloque o la propuesta ya no cabe, se rechaza sin cambios parciales. La migración `20261009110000_task_chunks_urgency` añade estos campos y permite varios fragmentos activos por tarea; se aplica con `npm run db:migrate`.
 
-Última actualización: 11 de octubre de 2026. Consulta el [historial de cambios](CHANGELOG.md) para ver las novedades y los requisitos de actualización, y la [hoja de ruta](ROADMAP.md) para el trabajo pendiente.
+Última actualización: 18 de octubre de 2026. Consulta el [historial de cambios](CHANGELOG.md) para ver las novedades y los requisitos de actualización, y la [hoja de ruta](ROADMAP.md) para el trabajo pendiente.
 
 ## Lo que puedes hacer
 
@@ -22,7 +22,8 @@ Las actividades sin espacio guardan un código de motivo en `DayPlan.details`, c
 - Reservar minutos de traslado antes de citas con ubicación.
 - Recibir Web Push antes de un bloque, con el resumen del día y las tareas que vencen mañana.
 - Consultar y editar los bloques de la última copia de hoy sin conexión, con una cola persistente de cambios.
-- Registrar tiempos reales, ver rachas y cumplimiento de hábitos y cerrar la semana en Revisión.
+- Registrar tiempos reales, ver el objetivo semanal y ocho semanas de progreso de hábitos y cerrar la semana en Revisión.
+- Definir una versión mínima y un plan si-entonces por hábito, registrar la versión realizada y recibir una invitación a retomar.
 - Marcar tareas profundas o ligeras y ajustar duraciones a partir del historial medido.
 - Guardar tareas con fecha límite y editarlas antes de programarlas.
 - Organizar hoy o una fecha futura; regenerar solo los bloques flexibles pendientes que todavía no empezaron.
@@ -71,6 +72,20 @@ La CSP prohíbe atributos `style`, así que las posiciones se sirven en una hoja
 Revisión abre la semana anterior por defecto; si una cuenta nueva no tiene bloques allí, muestra la semana en curso. Puedes navegar entre semanas sin alterar los planes. El resumen presenta los bloques cerrados, el tiempo dedicado por tipo de actividad, el cumplimiento de hábitos y las notas de los chequeos de fin de día. Cada jornada enlaza a su agenda.
 
 El porcentaje de cumplimiento compara bloques hechos con bloques hechos, omitidos, pospuestos o cuyo horario ya terminó; los bloques futuros no reducen el porcentaje. El tiempo completado usa minutos reales cuando se registraron y, de lo contrario, la duración programada. La comparación entre tiempo real y estimado incluye únicamente bloques con medición. Las sugerencias señalan actividades sin espacio, bloques sin resolver, días con menor cumplimiento y hábitos difíciles de sostener; son orientativas y no cambian automáticamente la agenda.
+
+## Versiones mínimas y progreso de hábitos
+
+Cada hábito permite guardar una versión mínima opcional (hasta 160 caracteres) y un plan si-entonces (hasta 500). En la lista de Hoy se muestra el plan y, cuando existe una versión mínima, aparece «Solo la mínima». El bloque queda cerrado con una etiqueta diferenciada; al reabrirlo se borra esa marca. Las sesiones mínimas se excluyen del aprendizaje de duración completa.
+
+Si una sesión mínima no tiene minutos reales registrados, Revisión y los presupuestos por categoría no le atribuyen la duración completa: no aporta minutos al total hasta que se registren. El cierre sigue contando como una oportunidad realizada.
+
+Hábitos muestra el objetivo semanal y las últimas ocho semanas. El total incluye sesiones completas y mínimas, indicando cuántas fueron mínimas. El denominador incluye las oportunidades futuras de la semana: representa una meta, no un porcentaje de incumplimiento. El historial utiliza la frecuencia actual del hábito y no reconstruye cambios históricos de frecuencia ni pausas.
+
+Hoy invita a retomar si la última ocurrencia anterior quedó omitida o sin registrar y existe un bloque pendiente o en curso hoy. Un registro pendiente no demuestra que la actividad no se realizó. Este mensaje solo considera ocurrencias creadas por el planificador.
+
+La migración `20261018100000_habit_minimum_plan` añade estos campos. Antes de arrancar la nueva versión, ejecuta `npm run db:migrate` y regenera Prisma con `npm run db:generate`; el build también regenera el cliente. Las filas existentes conservan su estado y las sesiones hechas se consideran completas.
+
+La finalización real separada del momento de registro, los ajustes de horario por hábito, las misiones configurables, los logros y los siguientes desafíos siguen pendientes; consulta [ROADMAP.md](ROADMAP.md).
 
 ## Disponibilidad que aprende con el uso
 

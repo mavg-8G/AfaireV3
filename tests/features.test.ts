@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { recurrenceDates, recurrenceInstances, type RecurrenceRule } from "../src/lib/recurrence";
-import { adjustedDuration, habitStats, learnedFocus } from "../src/lib/insights";
+import { adjustedDuration, habitStats, learnedFocus, missedLastTime } from "../src/lib/insights";
 import { dueNotices, validPushEndpoint } from "../src/lib/notifications";
 import { calendarDayBounds, combineLocalDateTime, dateOnly } from "../src/lib/time";
 import { scheduleItems, type Schedulable } from "../src/lib/scheduler";
@@ -67,4 +67,9 @@ test("calendar bounds handle skipped and repeated midnight without rejecting a r
 test("upcoming notices account for departure time when a located appointment has travel", () => {
   const notices = dueNotices(new Date("2026-10-08T13:00Z"), "America/Guayaquil", { ...settings, dailySummary: false, dueTomorrow: false }, [{ id: "gym", title: "Gym", startsAt: new Date("2026-10-08T13:30Z"), status: "PENDING", travelMinutes: 20 }], []);
   assert.equal(notices.length, 1); assert.match(notices[0].title, /30 min/); assert.match(notices[0].body, /traslado/);
+});
+
+test("never miss twice flags a skipped or unregistered last occurrence, not a done or started one", () => {
+  const rows = [{ id: "a", status: "SKIPPED" }, { id: "b", status: "PENDING" }, { id: "c", status: "DONE" }, { id: "d", status: "IN_PROGRESS" }];
+  assert.deepEqual(missedLastTime(rows).map(r => r.id), ["a", "b"]);
 });

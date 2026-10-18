@@ -1,5 +1,15 @@
 # Pruebas locales de agenda y avisos
 
+## Validación del programa de hábitos · 18 de octubre de 2026
+
+- 119 pruebas unitarias y 87 pruebas de integración correctas. Tras la corrección de minutos mínimos se repitieron las 13 pruebas de integración de transparencia.
+- 50 comprobaciones HTTP correctas sobre el build final, incluyendo los campos de versión mínima y plan si-entonces. Tipos, ESLint, build de producción y builds de worker y administración correctos.
+- Regresiones específicas: las sesiones mínimas no reducen la duración aprendida; sin medición no suman la duración completa a Revisión ni a categorías; con minutos reales se usa el valor registrado.
+- Base local comprobada en el puerto alternativo 55439, sin migraciones pendientes. No se modificó la configuración de conexión ni se desplegó el VPS.
+- Revisión visual de escritorio y móvil pendiente: la herramienta de navegador no pudo inicializarse. Las comprobaciones HTTP no sustituyen esta revisión.
+
+Comprobación manual pendiente: crear un hábito con versión mínima y plan; revisar Hoy y Hábitos a 390 y 1280 píxeles, en ambos idiomas; completar la mínima, reabrir y completar la versión normal; verificar etiquetas, progreso y ausencia de desbordamiento.
+
 Guía para verificar las funcionalidades del repositorio en un entorno local. La versión del paquete sigue siendo 3.0.0. Publicar el código en GitHub no actualiza el VPS: ese despliegue se realiza por separado.
 
 ## Arranque
