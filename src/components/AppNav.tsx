@@ -118,7 +118,7 @@ export function AppNav({ name }: { name: string }) {
 
     {/* Phones and tablets: bottom tab bar */}
     <div className="tabbar pointer-events-none fixed inset-x-0 bottom-0 z-30 lg:hidden">
-      <nav aria-label={t("Principal")} className="pointer-events-auto relative mx-auto h-(--tabbar-height) max-w-xl rounded-3xl border border-line bg-card/90 shadow-lg backdrop-blur-xl backdrop-saturate-150">
+      <nav aria-label={t("Principal")} className="pointer-events-auto relative mx-auto h-(--tabbar-height) max-w-xl bg-card">
         <span aria-hidden="true" className={`absolute inset-y-1.5 left-0 w-1/5 p-0.5 transition-transform duration-200 ease-(--ease-out) ${tabSlot < 0 ? "opacity-0" : slide[tabSlot]}`}><span className="block size-full rounded-2xl bg-sage-soft" /></span>
         <ul className="relative grid h-full grid-cols-5">
           {tabs.map(({ href, label, Icon }) => {

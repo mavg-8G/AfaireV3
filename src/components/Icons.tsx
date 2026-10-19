@@ -25,9 +25,9 @@ export const LogoutIcon = (p: IconProps) => <Svg {...p}><path d="M14 4.5h4a1.5 1
 export const MoreIcon = (p: IconProps) => <Svg {...p}><circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none" /></Svg>;
 export const KeyIcon = (p: IconProps) => <Svg {...p}><circle cx="8" cy="15" r="4" /><path d="m11 12 8.5-8.5M16.5 6.5l2.5 2.5M14.5 8.5l2 2" /></Svg>;
 
-// Same silhouette as public/pwa/icon.svg, without shared SVG gradient IDs.
+// Impulso: the A and check share the silhouette used by the PWA icons.
 export function BrandMark({ className = "size-9" }: IconProps) {
-  return <span aria-hidden="true" className={`relative grid shrink-0 place-items-center overflow-hidden rounded-[22%] bg-linear-to-br from-[#9255ff] via-[#6425ed] to-[#281178] text-white shadow-sm ${className}`}>
-    <svg viewBox="0 0 512 512" className="size-full"><path d="M-82 430C36 568 350 562 528 280" fill="none" stroke="#b48aff" strokeOpacity=".16" strokeWidth="62" /><path fill="currentColor" fillRule="evenodd" d="M129 211c5-61 47-98 112-98 73 0 113 38 113 108v158h-62v-26c-18 22-43 33-76 33-55 0-91-31-91-79 0-54 44-86 119-86h46v-4c0-32-17-49-49-49-28 0-45 15-49 43zm161 55h-43c-40 0-60 13-60 36 0 21 15 34 40 34 37 0 63-24 63-58z" /><circle cx="394" cy="345" r="31" fill="#ffb34f" /></svg>
+  return <span aria-hidden="true" className={`brand-mark grid shrink-0 place-items-center overflow-hidden rounded-[22%] ${className}`}>
+    <svg viewBox="0 0 512 512" className="size-full" fill="currentColor"><path d="m107 365 112-228q13-26 37-26t37 26l112 228h-79l-70-151-70 151z" /><path d="m196 345 49 43 106-117" fill="none" stroke="currentColor" strokeWidth="35" strokeLinecap="round" strokeLinejoin="round" /></svg>
   </span>;
 }

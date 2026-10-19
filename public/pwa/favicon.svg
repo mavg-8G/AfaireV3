@@ -1,20 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9255ff"/><stop offset=".48" stop-color="#6425ed"/><stop offset="1" stop-color="#281178"/></linearGradient>
-    <radialGradient id="light" cx="1" cy="0" r="1"><stop stop-color="#f28aff" stop-opacity=".65"/><stop offset=".75" stop-color="#a350ff" stop-opacity="0"/></radialGradient>
-    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#eae3ff"/></linearGradient>
-    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe38b"/><stop offset=".5" stop-color="#ffb34f"/><stop offset="1" stop-color="#ff743d"/></linearGradient>
-    <filter id="lift" x="-.3" y="-.3" width="1.6" height="1.7" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#20095c" flood-opacity=".32"/></filter>
-    <clipPath id="tile"><rect width="512" height="512" rx="112"/></clipPath>
-  </defs>
-  <g clip-path="url(#tile)">
-    <path fill="url(#bg)" d="M0 0h512v512H0z"/>
-    <path fill="url(#light)" d="M0 0h512v512H0z"/>
-    
-    
-    <g id="mark" >
-      <path fill="#fff" fill-rule="evenodd" d="M129 211c5-61 47-98 112-98 73 0 113 38 113 108v158h-62v-26c-18 22-43 33-76 33-55 0-91-31-91-79 0-54 44-86 119-86h46v-4c0-32-17-49-49-49-28 0-45 15-49 43zm161 55h-43c-40 0-60 13-60 36 0 21 15 34 40 34 37 0 63-24 63-58z"/>
-      <circle cx="394" cy="345" r="31" fill="url(#sun)"/>
-    </g>
+  <rect width="512" height="512" rx="112" fill="#ff795e"/>
+  <g id="mark" color="#ffffff" fill="currentColor">
+    <path d="m107 365 112-228q13-26 37-26t37 26l112 228h-79l-70-151-70 151z"/>
+    <path d="m196 345 49 43 106-117" fill="none" stroke="currentColor" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>

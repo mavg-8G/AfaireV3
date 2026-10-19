@@ -1,12 +1,12 @@
 /* Public shell, authenticated day copy and an explicit session-bound change queue. */
-const CACHE_NAME = "afaire-public-v10";
+const CACHE_NAME = "afaire-public-v11";
 const DAY_CACHE = "afaire-day-v1";
 const CHANGE_CACHE = "afaire-changes-v1";
 const CHANGE_PATH = "/offline-changes";
 let stateWork = Promise.resolve(), syncing;
 function serial(run) { const result = stateWork.then(run); stateWork = result.catch(() => {}); return result; }
 let snapshotGeneration = 0;
-const PUBLIC_ASSETS = ["/offline.html", "/offline.css", "/offline-day.js", "/pwa/icon-192.png", "/pwa/icon-512.png", "/pwa/maskable-512.png", "/pwa/apple-touch-icon.png"];
+const PUBLIC_ASSETS = ["/offline.html", "/offline.css", "/offline-day.js", "/pwa/icon-192.png", "/pwa/icon-512.png", "/pwa/maskable-512.png", "/pwa/apple-touch-icon.png", "/pwa/apple-touch-icon-dark.png"];
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);

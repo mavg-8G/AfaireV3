@@ -1,6 +1,6 @@
-:root{color-scheme:light;--paper:#f2f4f1;--card:#fff;--ink:#14201b;--muted:#56645d;--line:#d3dbd6;--accent:#1f6f5c;--on-accent:#fff;--danger:#b83a26}
-html[data-theme="dark"]{color-scheme:dark;--paper:#0e1412;--card:#161e1b;--ink:#e6eeea;--muted:#9aa9a2;--line:#29352f;--accent:#63cfa9;--on-accent:#0b1310;--danger:#ff8b72}
-@media(prefers-color-scheme:dark){html:not([data-theme="light"]){color-scheme:dark;--paper:#0e1412;--card:#161e1b;--ink:#e6eeea;--muted:#9aa9a2;--line:#29352f;--accent:#63cfa9;--on-accent:#0b1310;--danger:#ff8b72}}
+:root{color-scheme:light;--paper:#fff6ef;--card:#fffdf8;--ink:#3b211f;--muted:#806358;--line:#eadbd0;--accent:#a13828;--button:#ff795e;--on-accent:#3b211f;--danger:#b32340}
+html[data-theme="dark"]{color-scheme:dark;--paper:#1c1817;--card:#292220;--ink:#fff2e9;--muted:#c0a69b;--line:#463630;--accent:#ffaa91;--button:#ff795e;--on-accent:#3b211f;--danger:#ff91a1}
+@media(prefers-color-scheme:dark){html:not([data-theme="light"]){color-scheme:dark;--paper:#1c1817;--card:#292220;--ink:#fff2e9;--muted:#c0a69b;--line:#463630;--accent:#ffaa91;--button:#ff795e;--on-accent:#3b211f;--danger:#ff91a1}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:var(--paper);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
@@ -9,7 +9,7 @@ img{border-radius:22%}
 .eyebrow{font-size:13px;font-weight:600;color:var(--accent);margin-top:20px}
 h1{font-size:clamp(28px,7vw,38px);line-height:1.08;font-weight:650;letter-spacing:-.03em;margin:.3em 0}
 p{color:var(--muted)}
-a{display:inline-flex;align-items:center;min-height:46px;margin:16px 0;padding:10px 22px;border-radius:999px;background:var(--accent);color:var(--on-accent);text-decoration:none;font-weight:600}
+a{display:inline-flex;align-items:center;min-height:46px;margin:16px 0;padding:10px 22px;border-radius:999px;background:var(--button);color:var(--on-accent);text-decoration:none;font-weight:600}
 .note{font-size:13px}
 ul{list-style:none;padding:0}
 li{padding:16px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}

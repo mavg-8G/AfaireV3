@@ -44,7 +44,7 @@ function harness(previousStores?: Map<string, Map<string, Response>>) {
 }
 test("worker precaches only public assets without session cookies", async () => {
   const h = harness(); await h.lifecycle("install");
-  assert.equal(h.writes.length, 7); assert.ok(h.writes.every(path => path.startsWith("/pwa/") || /^\/offline\.(html|css)$/.test(path) || path === "/offline-day.js"));
+  assert.equal(h.writes.length, 8); assert.ok(h.writes.every(path => path.startsWith("/pwa/") || /^\/offline\.(html|css)$/.test(path) || path === "/offline-day.js"));
   assert.ok(h.credentials.every(value => value === "omit"));
 });
 test("private navigation is never cached and disconnection returns generic content", async () => {
@@ -57,7 +57,7 @@ test("private navigation is never cached and disconnection returns generic conte
 test("API, mutations, external origins and query strings bypass public cache", async () => {
   const h = harness(); await h.lifecycle("install");
   for (const [path, mode, method] of [["/api/auth/session", "cors", "GET"], ["/api/activity", "cors", "POST"], ["/", "navigate", "POST"], ["https://evil.invalid/offline.html", "navigate", "GET"], ["/pwa/icon-192.png?private=yes", "cors", "GET"]]) assert.equal(await h.request(path, mode, method), undefined);
-  assert.equal(h.writes.length, 7);
+  assert.equal(h.writes.length, 8);
 });
 test("authentication failures remain failures instead of offline pages", async () => {
   const h = harness(); await h.lifecycle("install"); h.status(401);

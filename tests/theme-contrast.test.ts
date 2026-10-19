@@ -17,7 +17,7 @@ const ratio = (a: string, b: string) => { const [high, low] = [luminance(a), lum
 // Foreground, background, minimum ratio. Text pairs the UI actually renders; WCAG AA is 4.5 (3 for large text).
 const pairs: [string, string, number][] = [
   ["ink", "paper", 4.5], ["ink", "card", 4.5], ["muted", "paper", 4.5], ["muted", "card", 4.5], ["muted", "sunken", 4.5],
-  ["sage", "paper", 4.5], ["sage", "card", 4.5], ["on-accent", "sage", 4.5], ["on-hero", "hero", 4.5],
+  ["sage", "paper", 4.5], ["sage", "card", 4.5], ["on-accent", "accent", 4.5], ["on-hero", "hero", 4.5], ["on-hero", "hero-end", 4.5],
   ["fixed", "fixed-soft", 4.5], ["sage", "sage-soft", 4.5], ["amber", "amber-soft", 4.5], ["amber", "card", 4.5],
   ["terracotta", "card", 4.5], ["terracotta", "paper", 4.5], ["gold", "card", 3],
 ];

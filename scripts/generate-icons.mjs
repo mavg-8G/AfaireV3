@@ -8,19 +8,19 @@ for (const size of [192, 512]) {
   await sharp(Buffer.from(svg)).resize(size, size).png().toFile(output(`../public/pwa/icon-${size}.png`));
 }
 
-// Let the operating system supply its own corner mask, with no transparent pixels.
+// Opaque, full bleed backgrounds let iOS and Android apply their own masks.
 const fullBleed = svg.replace('rx="112"', 'rx="0"');
 await sharp(Buffer.from(fullBleed)).resize(180, 180).png().toFile(output("../public/pwa/apple-touch-icon.png"));
-// Keep the entire letter and dot within Android's central 80% safe circle.
+// The complete A/check fits within Android's central 80% safe circle.
 const maskable = fullBleed.replace('id="mark"', 'id="mark" transform="translate(51.2 51.2) scale(.8)"');
 await sharp(Buffer.from(maskable)).png().toFile(output("../public/pwa/maskable-512.png"));
 
-// Small tabs need a crisp mark without shadows or decorative background arcs.
-const faviconSvg = svg
-  .replace(/<path d="M-.*?\/>/g, "")
-  .replace('filter="url(#lift)"', "")
-  .replace('fill="url(#paper)"', 'fill="#fff"');
-await writeFile(output("../public/pwa/favicon.svg"), faviconSvg);
+// Explicit variants also respect the in-app theme when it differs from the OS.
+const darkSvg = svg.replace('color="#ffffff"', 'color="#3b211f"');
+await writeFile(output("../public/pwa/favicon.svg"), svg);
+await writeFile(output("../public/pwa/favicon-dark.svg"), darkSvg);
+await sharp(Buffer.from(darkSvg.replace('rx="112"', 'rx="0"'))).resize(180, 180).png().toFile(output("../public/pwa/apple-touch-icon-dark.png"));
+const faviconSvg = svg;
 
 // Native entries for standard and high-density browser tabs.
 const sizes = [16, 32, 48];

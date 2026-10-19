@@ -2,36 +2,38 @@
 
 /*
  * Afaire design tokens.
- * Indigo is the brand and every primary action (the token is still named "sage");
- * amber marks flexible work the planner places; soft indigo marks fixed commitments;
- * rose ("terracotta") is reserved for destructive actions and errors.
+ * Impulso coral: cream surfaces by day, warm charcoal by night.
+ * Coral fills primary actions; "sage" is the darker/lighter coral used for readable text.
+ * Amber marks flexible work; clay marks fixed commitments; rose marks errors.
  * tests/theme-contrast.test.ts guards the contrast of these pairs.
  */
 :root {
   color-scheme: light;
-  --paper: #f6f4ee;
-  --sunken: #eeebe3;
-  --card: #ffffff;
-  --raised: #faf8f3;
-  --ink: #16142b;
-  --muted: #5c5972;
-  --line: #e2ded3;
-  --line-strong: #c9c3b3;
-  --sage: #4338ca;
-  --sage-soft: #e9e7fc;
-  --fixed: #3730a3;
-  --fixed-soft: #e9e7fc;
-  --amber: #92400e;
-  --amber-soft: #fdefd0;
-  --terracotta: #be123c;
-  --gold: #a86b12;
-  --pending: #fbf1dc;
-  --selection: #d6d2fa;
-  --on-accent: #ffffff;
-  --hero: #4338ca;
-  --hero-end: #6d5bf0;
-  --on-hero: #ffffff;
-  --shadow-color: 245 30% 12%;
+  --paper: #fff6ef;
+  --sunken: #f5e7dd;
+  --card: #fffdf8;
+  --raised: #fff9f3;
+  --ink: #3b211f;
+  --muted: #806358;
+  --line: #eadbd0;
+  --line-strong: #cbb3a6;
+  --sage: #a13828;
+  --sage-soft: #ffe1d4;
+  --fixed: #8e4439;
+  --fixed-soft: #ffe1d4;
+  --amber: #87440c;
+  --amber-soft: #ffefd7;
+  --terracotta: #b32340;
+  --gold: #946015;
+  --pending: #fff0dc;
+  --selection: #ffd1bf;
+  --brand-mark: #ffffff;
+  --accent: #ff795e;
+  --on-accent: #3b211f;
+  --hero: #ff795e;
+  --hero-end: #ff795e;
+  --on-hero: #3b211f;
+  --shadow-color: 14 32% 14%;
   --ease-out: cubic-bezier(.2, .7, .2, 1);
   --dur-fast: .15s;
   --dur-base: .25s;
@@ -46,32 +48,34 @@
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
-/* Dark palette: deep green-grey surfaces, not pure black, so OLED screens avoid smearing. */
+/* Warm charcoal keeps the coral identity in the explicit and system dark themes. */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #0e0d1b;
-  --sunken: #0a0914;
-  --card: #17162e;
-  --raised: #1e1d3a;
-  --ink: #eeedff;
-  --muted: #a5a2c2;
-  --line: #29274a;
-  --line-strong: #3c3a66;
-  --sage: #8f88ff;
-  --sage-soft: #262358;
-  --fixed: #c9c5ff;
-  --fixed-soft: #262358;
-  --amber: #fbbf24;
-  --amber-soft: #3a2a0a;
-  --terracotta: #fb7185;
+  --brand-mark: #3b211f;
+  --paper: #1c1817;
+  --sunken: #151211;
+  --card: #292220;
+  --raised: #332925;
+  --ink: #fff2e9;
+  --muted: #c0a69b;
+  --line: #463630;
+  --line-strong: #70564b;
+  --sage: #ffaa91;
+  --sage-soft: #4b2b23;
+  --fixed: #e7baa7;
+  --fixed-soft: #4b2b23;
+  --amber: #f3bc67;
+  --amber-soft: #403019;
+  --terracotta: #ff91a1;
   --gold: #e8bc66;
-  --pending: #2a2416;
-  --selection: #34307a;
-  --on-accent: #0e0d1b;
-  --hero: #2a2575;
-  --hero-end: #4b3fd1;
-  --on-hero: #ffffff;
-  --shadow-color: 245 60% 2%;
+  --pending: #362b1c;
+  --selection: #683b2e;
+  --accent: #ff795e;
+  --on-accent: #3b211f;
+  --hero: #ff795e;
+  --hero-end: #ff795e;
+  --on-hero: #3b211f;
+  --shadow-color: 14 28% 3%;
   --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / .4);
   --shadow-md: 0 1px 2px hsl(var(--shadow-color) / .35), 0 10px 28px -12px hsl(var(--shadow-color) / .7);
   --shadow-lg: 0 2px 6px hsl(var(--shadow-color) / .4), 0 28px 56px -20px hsl(var(--shadow-color) / .85);
@@ -79,29 +83,31 @@ html[data-theme="dark"] {
 @media (prefers-color-scheme: dark) {
   html[data-theme="system"] {
     color-scheme: dark;
-    --paper: #0e0d1b;
-    --sunken: #0a0914;
-    --card: #17162e;
-    --raised: #1e1d3a;
-    --ink: #eeedff;
-    --muted: #a5a2c2;
-    --line: #29274a;
-    --line-strong: #3c3a66;
-    --sage: #8f88ff;
-    --sage-soft: #262358;
-    --fixed: #c9c5ff;
-    --fixed-soft: #262358;
-    --amber: #fbbf24;
-    --amber-soft: #3a2a0a;
-    --terracotta: #fb7185;
+    --brand-mark: #3b211f;
+    --paper: #1c1817;
+    --sunken: #151211;
+    --card: #292220;
+    --raised: #332925;
+    --ink: #fff2e9;
+    --muted: #c0a69b;
+    --line: #463630;
+    --line-strong: #70564b;
+    --sage: #ffaa91;
+    --sage-soft: #4b2b23;
+    --fixed: #e7baa7;
+    --fixed-soft: #4b2b23;
+    --amber: #f3bc67;
+    --amber-soft: #403019;
+    --terracotta: #ff91a1;
     --gold: #e8bc66;
-    --pending: #2a2416;
-    --selection: #34307a;
-    --on-accent: #0e0d1b;
-    --hero: #2a2575;
-    --hero-end: #4b3fd1;
-    --on-hero: #ffffff;
-    --shadow-color: 245 60% 2%;
+    --pending: #362b1c;
+    --selection: #683b2e;
+    --accent: #ff795e;
+    --on-accent: #3b211f;
+    --hero: #ff795e;
+    --hero-end: #ff795e;
+    --on-hero: #3b211f;
+    --shadow-color: 14 28% 3%;
     --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / .4);
     --shadow-md: 0 1px 2px hsl(var(--shadow-color) / .35), 0 10px 28px -12px hsl(var(--shadow-color) / .7);
     --shadow-lg: 0 2px 6px hsl(var(--shadow-color) / .4), 0 28px 56px -20px hsl(var(--shadow-color) / .85);
@@ -127,7 +133,8 @@ html[data-theme="dark"] {
   --color-hero-end: var(--hero-end);
   --color-gold: var(--gold);
   --color-pending: var(--pending);
-  --color-white: var(--on-accent);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
   --color-hero: var(--hero);
   --color-on-hero: var(--on-hero);
   --font-sans: "Figtree Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -294,15 +301,15 @@ select.field {
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
   min-height: 2.75rem; padding: .5rem 1rem;
-  border-radius: 999px; border: 1px solid var(--line);
+  border-radius: .9rem; border: 1px solid var(--line);
   background: var(--card); color: var(--ink);
   font-size: .875rem; font-weight: 550; line-height: 1.2;
   transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
 }
 .btn:hover { border-color: var(--line-strong); background: var(--raised); }
 .btn:active { transform: scale(.98); }
-.btn-primary { background: var(--sage); border-color: var(--sage); color: var(--on-accent); box-shadow: var(--shadow-sm); }
-.btn-primary:hover { background: color-mix(in srgb, var(--sage) 86%, var(--ink)); border-color: transparent; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-sm); }
+.btn-primary:hover { background: color-mix(in srgb, var(--accent) 90%, var(--on-accent)); border-color: transparent; }
 .btn-danger { color: var(--terracotta); }
 .btn-danger:hover { border-color: var(--terracotta); background: color-mix(in srgb, var(--terracotta) 8%, var(--card)); }
 
@@ -349,8 +356,8 @@ details[open] > :not(summary) { animation: rise var(--dur-base) ease-out both; }
 
 progress { appearance: none; height: .5rem; border: 0; border-radius: 999px; overflow: hidden; background: var(--sunken); }
 progress::-webkit-progress-bar { background: var(--sunken); }
-progress::-webkit-progress-value { border-radius: 999px; background: linear-gradient(90deg, var(--hero), var(--sage)); transition: width .7s var(--ease-out); }
-progress::-moz-progress-bar { border-radius: 999px; background: var(--sage); }
+progress::-webkit-progress-value { border-radius: 999px; background: var(--accent); transition: width .7s var(--ease-out); }
+progress::-moz-progress-bar { border-radius: 999px; background: var(--accent); }
 
 /* Native dialogs fade and scale in; the backdrop fades separately. */
 dialog[open] { animation: dialog-in .2s ease-out both; }
@@ -359,11 +366,13 @@ dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* Fixed bottom tab bar on phones and tablets. */
-/* The bar floats .75rem above the screen edge, inset from the sides. */
+/* Flush mobile navigation follows the approved agenda mockup. */
 .tabbar {
-  padding-bottom: calc(var(--safe-bottom) + .75rem);
-  padding-left: max(.75rem, var(--safe-left));
-  padding-right: max(.75rem, var(--safe-right));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 .app-main {
   padding-left: max(1.25rem, var(--safe-left));
@@ -393,3 +402,6 @@ dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
   :focus-visible { outline-color: Highlight; }
   .day-rail::before { background: CanvasText; }
 }
+
+/* The same Impulso silhouette is white by day and dark on coral by night. */
+.brand-mark { background: var(--accent); color: var(--brand-mark); }

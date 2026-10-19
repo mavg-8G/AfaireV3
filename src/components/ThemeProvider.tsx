@@ -1,13 +1,15 @@
 "use client";
 import { useI18n } from "@/components/LocaleProvider";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DeviceIcon, MoonIcon, SunIcon } from "./Icons";
+import { THEME_COLORS, type Theme } from "@/lib/theme";
 
-export type Theme = "system" | "light" | "dark";
-export const THEME_COLORS = { light: "#f6f4ee", dark: "#0e0d1b" } as const;
+export type { Theme } from "@/lib/theme";
 const ThemeContext = createContext<{ theme: Theme; change: (theme: Theme) => void } | null>(null);
 
 export function ThemeProvider({ initialTheme, children }: { initialTheme: Theme; children: React.ReactNode }) {
+  const router = useRouter();
   const [theme, setTheme] = useState(initialTheme);
   useEffect(() => {
     const system = window.matchMedia("(prefers-color-scheme: dark)");
@@ -24,6 +26,8 @@ export function ThemeProvider({ initialTheme, children }: { initialTheme: Theme;
     document.documentElement.dataset.theme = value;
     document.cookie = `afaire-theme=${value}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
     setTheme(value);
+    // Let Next update its own metadata links, including the iOS icon, from the saved theme.
+    router.refresh();
   }
   return <ThemeContext.Provider value={{ theme, change }}>{children}</ThemeContext.Provider>;
 }
