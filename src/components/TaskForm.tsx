@@ -22,7 +22,7 @@ export function TaskForm({ task, categories = [], learningTemplates = [], today,
     setPending(true);setError("");setMessage("");
     try {const result=await applyTaskPreview(new FormData(formRef.current),preview.token);if(result.error){setError(result.error);setPreview(null);}else{formRef.current.reset();setPreview(null);setMessage(t("Tarea guardada y plan aplicado. Puedes deshacer la replanificación desde la agenda."));}}catch{setError(t("No se pudo guardar."));}finally{setPending(false);}
   }
-  return <form ref={formRef} aria-busy={pending} onChange={()=>setPreview(null)} className="@container grid gap-4 rounded-2xl border border-line bg-card p-5 shadow-sm" onSubmit={async event=>{
+  return <form ref={formRef} aria-busy={pending} onChange={()=>setPreview(null)} className="@container grid gap-4 rounded-3xl border border-line bg-card p-5 shadow-md" onSubmit={async event=>{
     event.preventDefault();const form=event.currentTarget;setPending(true);setError("");setMessage("");
     try{const result=task?await updateTask(task.id,new FormData(form)):await createTask(new FormData(form));if(result.error)setError(result.error);else{setPreview(null);setMessage(t("Tarea guardada."));if(!task)form.reset();}}catch{setError(t("No se pudo guardar."));}finally{setPending(false);}
   }}>

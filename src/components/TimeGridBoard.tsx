@@ -92,7 +92,7 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
     {firstPaint && <style nonce={nonce} dangerouslySetInnerHTML={{ __html: css }} />}
     {error && <p role="alert" className="rounded-xl border border-terracotta/40 bg-card px-4 py-3 text-sm text-terracotta">{t(error)}</p>}
     <p role="status" aria-live="polite" className="sr-only">{drag?.keys && dragged ? t(`Mover «${dragged.title}» a ${days[drag.day].longLabel}, ${clock(drag.start)}. Enter confirma, Escape cancela.`) : pending ? t("Guardando…") : ""}</p>
-    <div ref={scroller} className="overflow-x-auto rounded-2xl border border-line bg-card shadow-sm">
+    <div ref={scroller} className="overflow-x-auto rounded-3xl border border-line bg-card shadow-md">
       <div aria-busy={pending} className={`grid ${single ? "grid-cols-[3.25rem_minmax(0,1fr)]" : "min-w-[52rem] grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]"}`}>
         {!single && <><div className="border-b border-line" />{days.map(day => <Link key={day.date} href={`/?date=${day.date}`} title={day.longLabel} className={`border-b border-l border-line px-2 py-2.5 text-center text-sm font-semibold capitalize transition hover:bg-sunken ${day.isToday ? "bg-sage-soft text-sage" : "text-muted"}`}>{day.label}{day.isToday && <span className="sr-only">{t(" · hoy")}</span>}</Link>)}</>}
         <div className="tg-body flex flex-col" aria-hidden="true">{hours.map(hour => <div key={hour} className="flex-1 pr-2 text-right text-[11px] tabular-nums text-muted"><span className="relative -top-2">{hour === range.start ? "" : clock(hour)}</span></div>)}</div>
@@ -104,7 +104,7 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
             const moving = drag?.id === item.id;
             return <button key={item.cls} type="button" data-event={item.id} title={`${item.title} · ${clock(item.start)}–${clock(item.end)}`} aria-disabled={pending && moving ? true : undefined}
               aria-label={`${item.title}, ${clock(item.start)}–${clock(item.end)}, ${t(item.locked ? "Fijo" : "Flexible")}${item.done ? `, ${t("Completado ✓")}` : ""}${item.movable ? `. ${t("Flechas para mover, Enter para abrir.")}` : ""}`}
-              className={`${item.cls} absolute inset-x-0.5 z-[5] flex min-h-0 select-none flex-col items-stretch justify-start overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm [-webkit-touch-callout:none] ${item.locked ? "border-fixed bg-fixed-soft" : "border-sage bg-sage-soft"} ${item.active ? "ring-1 ring-sage" : ""} ${item.done ? "opacity-60" : ""} ${moving ? "opacity-40" : ""} ${item.movable ? "cursor-grab active:cursor-grabbing" : ""}`}
+              className={`${item.cls} absolute inset-x-0.5 z-[5] flex min-h-0 select-none flex-col items-stretch justify-start overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm [-webkit-touch-callout:none] ${item.locked ? "border-fixed bg-fixed-soft" : "border-amber bg-amber-soft"} ${item.active ? "ring-1 ring-sage" : ""} ${item.done ? "opacity-60" : ""} ${moving ? "opacity-40" : ""} ${item.movable ? "cursor-grab active:cursor-grabbing" : ""}`}
               onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } router.push(`/?date=${day.date}#event-${item.id}`); }}
               onKeyDown={event => keyMove(event, item)} onBlur={() => { if (drag?.keys && !pending) setDrag(null); }}
               onContextMenu={event => { if (gesture.current?.touch) event.preventDefault(); }}

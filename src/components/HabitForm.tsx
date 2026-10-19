@@ -9,7 +9,7 @@ export function HabitForm({ habit, categories = [] }: { habit?: Habit; categorie
   const { t, preferences } = useI18n();
   const [error, setError] = useState(""); const [pending, setPending] = useState(false); const [message, setMessage] = useState("");
   const [frequencyMode,setFrequencyMode]=useState(habit?.frequencyMode??"DAYS");
-  return <form aria-busy={pending} className="grid gap-4 rounded-2xl border border-line bg-card p-5 shadow-sm" onSubmit={async event => {
+  return <form aria-busy={pending} className="grid gap-4 rounded-3xl border border-line bg-card p-5 shadow-md" onSubmit={async event => {
     event.preventDefault(); const form = event.currentTarget; setPending(true); setError(""); setMessage("");
     try { const result = habit ? await updateHabit(habit.id, new FormData(form)) : await createHabit(new FormData(form)); if (result.error) setError(result.error); else { setMessage(t("Hábito guardado. Se aplicará al próximo plan.")); if (!habit) form.reset(); } }
     catch { setError(t("No se pudo guardar.")); } finally { setPending(false); }

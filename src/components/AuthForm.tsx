@@ -13,13 +13,13 @@ export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "regist
   const { t, preferences } = useI18n();
   const [state, setState] = useState<AuthFormState>({}); const [pending, setPending] = useState(false);
   const register = mode === "register";
-  return <main className="topbar mx-auto grid min-h-dvh w-full max-w-6xl items-center gap-12 px-5 py-10 sm:px-6 lg:grid-cols-2 lg:py-12">
+  return <main className="topbar auth-glow mx-auto grid min-h-dvh w-full max-w-6xl items-center gap-12 px-5 py-10 sm:px-6 lg:grid-cols-2 lg:py-12">
     <section className="hidden lg:block"><Link href="/login" className="flex w-fit items-center gap-3 font-display text-3xl font-semibold tracking-tight"><BrandMark className="size-11" />Afaire</Link>
       <p className="eyebrow mt-16">{t("Haz espacio para lo que importa")}</p>
       <h2 className="mt-4 max-w-lg text-6xl font-semibold leading-[1.02] tracking-[-0.035em]">{t("Tu día, con un poco más de calma.")}</h2>
       <p className="mt-6 max-w-md text-lg leading-relaxed text-muted">{t("Fija tus citas, elige tus rutinas y deja que Afaire encuentre un lugar para cada cosa.")}</p>
       <ol aria-label={t("Un día con intención")} className="day-rail mt-10 max-w-sm space-y-3">
-        {[["09:00", t("Tu cita, en su lugar"), true], ["10:10", t("Un momento para avanzar"), false], ["12:30", t("Tiempo para una pausa"), false]].map(([time, label, fixed]) => <li key={String(time)} className="relative grid grid-cols-[3.5rem_1fr] gap-x-6 sm:grid-cols-[4.5rem_1fr]"><span className="pt-3.5 text-right text-sm font-semibold tabular-nums">{time}</span><span aria-hidden="true" className={`absolute top-[1.05rem] left-[calc(5.25rem-6px)] size-3 rounded-full border-2 ${fixed ? "border-fixed bg-fixed" : "border-sage bg-card"}`} /><span className={`rounded-2xl border bg-card px-4 py-3 text-sm font-medium shadow-sm ${fixed ? "border-fixed/40" : "border-line"}`}>{label}</span></li>)}
+        {[["09:00", t("Tu cita, en su lugar"), true], ["10:10", t("Un momento para avanzar"), false], ["12:30", t("Tiempo para una pausa"), false]].map(([time, label, fixed]) => <li key={String(time)} className="relative grid grid-cols-[3.5rem_1fr] gap-x-6 sm:grid-cols-[4.5rem_1fr]"><span className="pt-3.5 text-right text-sm font-semibold tabular-nums">{time}</span><span aria-hidden="true" className={`absolute top-[1.05rem] left-[calc(5.25rem-6px)] size-3 rounded-full border-2 ${fixed ? "border-fixed bg-fixed" : "border-amber bg-card"}`} /><span className={`rounded-2xl border bg-card px-4 py-3 text-sm font-medium shadow-md ${fixed ? "border-fixed/40" : "border-line"}`}>{label}</span></li>)}
       </ol>
     </section>
     <section className="mx-auto w-full max-w-md rounded-[2rem] border border-line bg-card p-6 shadow-lg sm:p-10">

@@ -14,7 +14,7 @@ function BudgetForm({category}:{category?:CategoryBudget}) {
   </form>;
 }
 export function CategoryBudgetSettings({categories}:{categories:CategoryBudget[]}) {
-  const {t}=useI18n();return <section className="space-y-4 rounded-2xl border border-line bg-card p-5 shadow-sm"><h2 className="text-2xl">{t("Presupuesto de tiempo por categoría")}</h2><p className="text-sm text-muted">{t("Define objetivos semanales y asigna categorías a tareas o hábitos. El motor reserva bloques de categoría para cubrir lo que falte, respetando citas, urgencias, capacidad y descansos. Un objetivo no es un límite que elimine tareas.")}</p>
+  const {t}=useI18n();return <section className="space-y-4 rounded-3xl border border-line bg-card p-5 shadow-md"><h2 className="text-2xl">{t("Presupuesto de tiempo por categoría")}</h2><p className="text-sm text-muted">{t("Define objetivos semanales y asigna categorías a tareas o hábitos. El motor reserva bloques de categoría para cubrir lo que falte, respetando citas, urgencias, capacidad y descansos. Un objetivo no es un límite que elimine tareas.")}</p>
     <div className="grid items-start gap-6 md:grid-cols-2"><BudgetForm /><div className="space-y-3">{categories.map(category=><details key={category.id} className="rounded-xl border border-line p-3"><summary className="text-sm">{category.name} · {category.weeklyMinutes} {t("min/semana")}{!category.fillBlocks?` · ${t("Sin relleno")}`:""}{!category.active?` · ${t("Pausado")}`:""}</summary><div className="mt-3 space-y-3"><BudgetForm category={category} /><ActionButton action={toggleCategoryBudget.bind(null,category.id)}>{t(category.active?"Pausar objetivo":"Activar objetivo")}</ActionButton></div></details>)}</div></div>
   </section>;
 }
