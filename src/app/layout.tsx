@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   applicationName: "Afaire", manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Afaire", statusBarStyle: "default" },
   formatDetection: { telephone: false, email: false, address: false },
-  icons: { icon: [{ url: "/favicon.ico", sizes: "32x32" }, { url: "/pwa/icon.svg", type: "image/svg+xml" }, { url: "/pwa/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/pwa/apple-touch-icon.png" },
+  icons: { icon: [{ url: "/favicon.ico", sizes: "16x16 32x32 48x48" }, { url: "/pwa/favicon.svg?v=2", type: "image/svg+xml" }, { url: "/pwa/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/pwa/apple-touch-icon.png?v=2" },
   other: { "mobile-web-app-capable": "yes" },
   robots: { index: false, follow: false },
 };

@@ -25,9 +25,9 @@ export const LogoutIcon = (p: IconProps) => <Svg {...p}><path d="M14 4.5h4a1.5 1
 export const MoreIcon = (p: IconProps) => <Svg {...p}><circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none" /></Svg>;
 export const KeyIcon = (p: IconProps) => <Svg {...p}><circle cx="8" cy="15" r="4" /><path d="m11 12 8.5-8.5M16.5 6.5l2.5 2.5M14.5 8.5l2 2" /></Svg>;
 
-// Same drawing as public/pwa/icon.svg (solid colours: the mark renders more than once per page, so no gradient ids).
+// Same silhouette as public/pwa/icon.svg, without shared SVG gradient IDs.
 export function BrandMark({ className = "size-9" }: IconProps) {
-  return <span aria-hidden="true" className={`relative grid shrink-0 place-items-center overflow-hidden rounded-[30%] bg-linear-to-br from-[#7c6cff] via-[#4338ca] to-[#1e1b4b] text-white shadow-sm ${className}`}>
-    <svg viewBox="0 0 512 512" className="size-full"><circle cx="256" cy="256" r="178" fill="none" stroke="currentColor" strokeOpacity=".16" strokeWidth="22" /><path d="M256 78a178 178 0 0 1 166 114" fill="none" stroke="#ffb35c" strokeWidth="22" strokeLinecap="round" /><path fill="currentColor" transform="translate(256 262) scale(.92) translate(-279 -254)" d="M174 218c6-48 37-76 84-76 61 0 86 33 86 88v130h-42v-22c-16 19-37 29-65 29-43 0-73-27-73-64 0-46 40-70 108-70h29v-7c0-31-15-46-43-46-26 0-41 13-45 38zm127 51h-25c-42 0-68 11-68 32 0 19 13 31 36 31 32 0 57-21 57-54z" /><circle cx="365" cy="345" r="27" fill="#ffa057" /></svg>
+  return <span aria-hidden="true" className={`relative grid shrink-0 place-items-center overflow-hidden rounded-[22%] bg-linear-to-br from-[#9255ff] via-[#6425ed] to-[#281178] text-white shadow-sm ${className}`}>
+    <svg viewBox="0 0 512 512" className="size-full"><path d="M-82 430C36 568 350 562 528 280" fill="none" stroke="#b48aff" strokeOpacity=".16" strokeWidth="62" /><path fill="currentColor" fillRule="evenodd" d="M129 211c5-61 47-98 112-98 73 0 113 38 113 108v158h-62v-26c-18 22-43 33-76 33-55 0-91-31-91-79 0-54 44-86 119-86h46v-4c0-32-17-49-49-49-28 0-45 15-49 43zm161 55h-43c-40 0-60 13-60 36 0 21 15 34 40 34 37 0 63-24 63-58z" /><circle cx="394" cy="345" r="31" fill="#ffb34f" /></svg>
   </span>;
 }
