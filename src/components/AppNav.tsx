@@ -21,8 +21,8 @@ const links = [
 ];
 
 // The phone tab bar keeps four destinations; the rest live behind "Más" so every tab stays a comfortable tap target.
-const tabs = links.slice(0, 4);
-const moreLinks = [...links.slice(4), { href: "/sessions", label: "Sesiones activas", Icon: DeviceIcon }];
+const tabs = links.filter(({ href }) => ["/", "/week", "/habits", "/review"].includes(href));
+const moreLinks = [...links.filter(link => !tabs.includes(link)), { href: "/sessions", label: "Sesiones activas", Icon: DeviceIcon }];
 
 // The CSP forbids inline styles, so the sliding indicators move through fixed translate classes, one per link.
 const rail = ["translate-y-0", "translate-y-12", "translate-y-24", "translate-y-36", "translate-y-48", "translate-y-60"];
