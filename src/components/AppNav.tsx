@@ -103,7 +103,7 @@ export function AppNav({ name }: { name: string }) {
           return <li key={href} className="min-w-0">
             <Link href={href} aria-current={current ? "page" : undefined}
               className={`flex h-full flex-col items-center justify-center gap-1 px-0.5 text-[10.5px] font-semibold leading-none transition ${current ? "text-sage" : "text-muted active:text-ink"}`}>
-              <span className={`grid h-7 w-12 place-items-center rounded-full transition ${current ? "bg-sage-soft" : ""}`}><Icon className="size-[21px]" /></span>
+              <span className={`grid h-7 w-12 place-items-center rounded-full transition duration-150 active:scale-95 ${current ? "bg-sage-soft" : ""}`}><Icon className="size-[21px]" /></span>
               <span className="max-w-full truncate">{t(label)}</span>
             </Link>
           </li>;
