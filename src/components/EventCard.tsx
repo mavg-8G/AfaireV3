@@ -31,9 +31,9 @@ export function EventCard({ event, timezone }: { event: Event & { series?: Event
       {!skipped && <div className="flex flex-wrap gap-2"><ActionButton action={toggleEventDone.bind(null, event.id, false)} className={done ? "" : "btn-primary"}>{done ? t("Reabrir") : t("Hecho ✓")}</ActionButton>{!done && event.habit?.minimumVersion && <ActionButton action={toggleEventDone.bind(null, event.id, true)}>{t("Solo la mínima: ")}{event.habit.minimumVersion}</ActionButton>}</div>}
     </div>
     {event.chunkIndex != null && <p className="mt-2 text-xs text-sage">{t("Fragmento")} {event.chunkIndex}/{event.chunkCount} · {t("La tarea se completa al terminar todos los fragmentos.")}</p>}
-    {event.status === "PENDING" && <BlockMover id={event.id} date={ymdInZone(event.startsAt, timezone)} minute={hmMinutes(formatTime(event.startsAt, timezone))} />}
     <details className="mt-3 border-t border-line pt-1 text-sm"><summary className="text-sage">{t("¿Por qué este bloque está aquí?")}</summary><p className="mt-2 leading-relaxed text-muted">{t(event.planningReason ?? (event.seriesId ? t("Cita generada según tu regla de repetición; conserva el horario de la zona de la serie.") : event.source === "MANUAL" ? t("Cita con el horario elegido por ti. El planificador reserva su tiempo y el traslado.") : t("Este bloque se creó antes de guardar explicaciones. Al volver a organizar el día, los bloques flexibles pendientes tendrán una explicación.")))}</p></details>
     {!skipped && <details className="text-sm"><summary className="text-muted hover:text-ink">{t("Opciones del bloque")}</summary>
+      {event.status === "PENDING" && <div className="mt-3"><BlockMover id={event.id} date={ymdInZone(event.startsAt, timezone)} minute={hmMinutes(formatTime(event.startsAt, timezone))} /></div>}
       <div className="my-3 flex flex-wrap gap-2">
         {!event.locked && <ActionButton action={lockEvent.bind(null, event.id)}>{t("Fijar horario")}</ActionButton>}
         {!done && event.status === "PENDING" && <ActionButton action={changeEventStatus.bind(null, event.id, "IN_PROGRESS")}>{t("Empezar")}</ActionButton>}

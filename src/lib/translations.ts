@@ -550,6 +550,8 @@ export const english: Record<string, string> = {
   "bloques en tu día": "blocks in your day",
   "completados": "completed",
   "de": "of",
+  "Capacidad del día": "Day capacity",
+  "Hábitos de hoy": "Today's habits",
   "de racha": "streak",
   "dispositivos registrados. En iOS requiere instalar Afaire en la pantalla de inicio. Los avisos pueden mostrar títulos en la pantalla bloqueada.": "devices registered. On iOS, install Afaire on the home screen. Notifications may show titles on the lock screen.",
   "días": "days",
