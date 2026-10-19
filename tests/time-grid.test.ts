@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { calendarDayBounds } from "../src/lib/time";
-import { assignLanes, clampStart, gridClass, gridCss, gridRange, minuteHm, minuteInDay, shiftSlot, snapMinute } from "../src/lib/time-grid";
+import { GRID_MIN_BLOCK, assignLanes, clampStart, displayedInterval, gridClass, gridCss, gridRange, minuteHm, minuteInDay, shiftSlot, snapMinute } from "../src/lib/time-grid";
 import { translator } from "../src/lib/locale";
 import { dayExtremes, minutesLabel, summarizeWeek, type ReviewEvent } from "../src/lib/weekly-review";
 
@@ -31,11 +31,22 @@ test("visible range, snapping and nudges stay inside valid times", () => {
 test("grid stylesheet only emits safe class selectors and numeric positions", () => {
   assert.equal(gridClass("abc</style>{}", 2), "tg-abcstyle-2");
   const css = gridCss({ start: 360, end: 1080 }, [{ cls: "tg-a-0", start: 540, end: 600, lane: 1, lanes: 2 }, { cls: "bad}{", start: 0, end: 10 }, { cls: "tg-b-0", start: 0, end: 300 }]);
-  assert.equal(css, ".tg-body{height:39rem}.tg-a-0{top:25%;height:8.333%;left:50%;width:50%}.tg-b-0{display:none}");
+  assert.equal(css, ".tg-body{height:84rem}.tg-a-0{top:25%;height:8.333%;left:50%;width:50%}.tg-b-0{display:none}");
   assert.match(css, /^[A-Za-z0-9_.:;%{}-]+$/);
   // Short blocks keep a readable height; at the end of the grid they grow upwards instead.
   assert.equal(gridCss({ start: 0, end: 200 }, [{ cls: "tg-s-0", start: 100, end: 105, min: 20 }, { cls: "tg-e-0", start: 195, end: 200, min: 20 }, { cls: "tg-l-0", start: 0, end: 50, min: 20 }], 3),
     ".tg-body{height:10rem}.tg-s-0{top:50%;height:10%}.tg-e-0{top:90%;height:10%}.tg-l-0{top:0%;height:25%}");
+});
+
+test("enlarged short blocks share lanes when their visible areas meet at midnight", () => {
+  const range = { start: 0, end: 1440 };
+  const segments = [{ id: "earlier", start: 1415, end: 1420 }, { id: "last", start: 1435, end: 1440 }]
+    .map(item => ({ id: item.id, ...displayedInterval(item.start, item.end, range, GRID_MIN_BLOCK) }));
+  assert.deepEqual(segments[1], { id: "last", start: 1410, end: 1440 });
+  const lanes = assignLanes(segments);
+  assert.equal(lanes.get("earlier")?.lanes, 2); assert.equal(lanes.get("last")?.lanes, 2);
+  assert.notEqual(lanes.get("earlier")?.lane, lanes.get("last")?.lane);
+  assert.match(gridCss(range, [{ cls: "tg-last", start: 1435, end: 1440, min: GRID_MIN_BLOCK }]), /top:97.917%;height:2.083%/);
 });
 test("weekly review counts closed blocks, keeps upcoming ones out of the rate and labels durations", () => {
   const at = (day: number, hour: number) => new Date(Date.UTC(2026, 9, day, hour));

@@ -3,7 +3,7 @@ import type { DayOverride, Event } from "../generated/prisma/client";
 import { availabilityWindows } from "@/lib/availability";
 import { displayDay, type Preferences } from "@/lib/locale";
 import { calendarDayBounds, dateOnly } from "@/lib/time";
-import { GRID_MIN_BLOCK, assignLanes, gridClass, gridCss, gridRange, minuteInDay, type GridDay, type GridItem } from "@/lib/time-grid";
+import { GRID_MIN_BLOCK, assignLanes, displayedInterval, gridClass, gridCss, gridRange, minuteInDay, type GridDay, type GridItem } from "@/lib/time-grid";
 import { TimeGridBoard } from "./TimeGridBoard";
 
 type Profile = Parameters<typeof availabilityWindows>[0];
@@ -18,7 +18,7 @@ export async function TimeGrid({ profile, timezone, preferences, dates, today, n
     availabilityWindows(profile, date, timezone, override).forEach((window, index) => windows.push({ cls: `tg-w-${day}-${index}`, day, start: minuteInDay(window.start, bounds, timezone), end: minuteInDay(window.end, bounds, timezone) }));
     const visible = events.filter(event => !["CANCELLED", "SKIPPED"].includes(event.status) && event.startsAt < bounds.end && event.endsAt > bounds.start)
       .map(event => ({ event, start: minuteInDay(event.startsAt, bounds, timezone), end: minuteInDay(event.endsAt, bounds, timezone) })).filter(value => value.end > value.start);
-    const lanes = assignLanes(visible.map(value => ({ id: value.event.id, start: value.start, end: Math.max(value.end, value.start + GRID_MIN_BLOCK) })));
+    const lanes = assignLanes(visible.map(value => ({ id: value.event.id, ...displayedInterval(value.start, value.end, { start: 0, end: 1440 }, GRID_MIN_BLOCK) })));
     for (const { event, start, end } of visible) items.push({
       id: event.id, cls: gridClass(event.id, day), title: event.title, day, start, end, ...lanes.get(event.id)!,
       locked: event.locked, done: event.status === "DONE", active: event.status === "IN_PROGRESS", kind: event.source,

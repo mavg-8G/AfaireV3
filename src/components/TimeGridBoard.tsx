@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/LocaleProvider";
 import { displayClock } from "@/lib/locale";
 import { moveEvent } from "@/app/actions/events";
-import { GRID_MIN_BLOCK, GRID_STEP, clampStart, minuteHm, snapMinute, type GridDay, type GridItem } from "@/lib/time-grid";
+import { GRID_MIN_BLOCK, GRID_STEP, clampStart, displayedInterval, minuteHm, snapMinute, type GridDay, type GridItem } from "@/lib/time-grid";
 
 type Slot = { day: number; start: number };
 type Gesture = { item: GridItem; pointerId: number; x: number; y: number; grab: number; active: boolean; touch: boolean; timer?: ReturnType<typeof setTimeout>; target: Slot };
@@ -31,13 +31,13 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
   }, [css]);
   useLayoutEffect(() => {
     if (!drag || !dragged || typeof CSSStyleSheet === "undefined" || !("adoptedStyleSheets" in document)) return;
-    const shown = Math.max(dragged.end - dragged.start, GRID_MIN_BLOCK);
-    const top = ((Math.min(drag.start, range.end - shown) - range.start) / span) * 100;
-    const height = (shown / span) * 100;
+    const shown = displayedInterval(drag.start, drag.start + dragged.end - dragged.start, range, GRID_MIN_BLOCK);
+    const top = ((shown.start - range.start) / span) * 100;
+    const height = ((shown.end - shown.start) / span) * 100;
     const sheet = new CSSStyleSheet(); sheet.replaceSync(`.tg-preview{top:${top}%;height:${height}%}`);
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     return () => { document.adoptedStyleSheets = document.adoptedStyleSheets.filter(value => value !== sheet); };
-  }, [drag, dragged, range.start, range.end, span]);
+  }, [drag, dragged, range, span]);
   // On narrow screens the week scrolls sideways; start with today in view.
   useEffect(() => {
     const column = columns.current[days.findIndex(day => day.isToday)]; const first = columns.current[0];
@@ -92,10 +92,11 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
     {firstPaint && <style nonce={nonce} dangerouslySetInnerHTML={{ __html: css }} />}
     {error && <p role="alert" className="rounded-xl border border-terracotta/40 bg-card px-4 py-3 text-sm text-terracotta">{t(error)}</p>}
     <p role="status" aria-live="polite" className="sr-only">{drag?.keys && dragged ? t(`Mover «${dragged.title}» a ${days[drag.day].longLabel}, ${clock(drag.start)}. Enter confirma, Escape cancela.`) : pending ? t("Guardando…") : ""}</p>
-    <div ref={scroller} className="overflow-x-auto rounded-3xl border border-line bg-card shadow-md">
-      <div aria-busy={pending} className={`grid ${single ? "grid-cols-[3.25rem_minmax(0,1fr)]" : "min-w-[52rem] grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]"}`}>
-        {!single && <><div className="border-b border-line" />{days.map(day => <Link key={day.date} href={`/?date=${day.date}`} title={day.longLabel} className={`border-b border-l border-line px-2 py-2.5 text-center text-sm font-semibold capitalize transition hover:bg-sunken ${day.isToday ? "bg-sage-soft text-sage" : "text-muted"}`}>{day.label}{day.isToday && <span className="sr-only">{t(" · hoy")}</span>}</Link>)}</>}
-        <div className="tg-body flex flex-col" aria-hidden="true">{hours.map(hour => <div key={hour} className="flex-1 pr-2 text-right text-[11px] tabular-nums text-muted"><span className="relative -top-2">{hour === range.start ? "" : clock(hour)}</span></div>)}</div>
+    {!single && <p className="text-xs text-muted lg:hidden">{t("Desliza el calendario para ver los demás días.")}</p>}
+    <div ref={scroller} className="isolate overflow-x-auto rounded-3xl border border-line bg-card shadow-md">
+      <div aria-busy={pending} className={`grid ${single ? "grid-cols-[3.5rem_minmax(0,1fr)]" : "min-w-[101.5rem] grid-cols-[3.5rem_repeat(7,minmax(14rem,1fr))] sm:min-w-[87.5rem] sm:grid-cols-[3.5rem_repeat(7,minmax(12rem,1fr))]"}`}>
+        {!single && <><div className="sticky left-0 z-30 border-b border-line bg-card" />{days.map(day => <Link key={day.date} href={`/?date=${day.date}`} title={day.longLabel} className={`border-b border-l border-line px-3 py-3.5 text-center text-base font-semibold capitalize transition hover:bg-sunken ${day.isToday ? "bg-sage-soft text-sage" : "text-muted"}`}>{day.label}{day.isToday && <span className="sr-only">{t(" · hoy")}</span>}</Link>)}</>}
+        <div className="tg-body sticky left-0 z-20 flex flex-col bg-card" aria-hidden="true">{hours.map(hour => <div key={hour} className="flex-1 pr-2 text-right text-xs tabular-nums text-muted"><span className="relative -top-2">{hour === range.start ? "" : clock(hour)}</span></div>)}</div>
         {days.map((day, index) => <div key={day.date} ref={node => { columns.current[index] = node; }} role="group" aria-label={day.longLabel} className="tg-body relative border-l border-line bg-sunken/70">
           {windows.filter(window => window.day === index).map(window => <div key={window.cls} aria-hidden="true" className={`${window.cls} absolute inset-x-0 bg-card`} />)}
           <div aria-hidden="true" className="absolute inset-0 flex flex-col">{hours.map(hour => <div key={hour} className="flex-1 border-t border-line/70" />)}</div>
@@ -104,7 +105,7 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
             const moving = drag?.id === item.id;
             return <button key={item.cls} type="button" data-event={item.id} title={`${item.title} · ${clock(item.start)}–${clock(item.end)}`} aria-disabled={pending && moving ? true : undefined}
               aria-label={`${item.title}, ${clock(item.start)}–${clock(item.end)}, ${t(item.locked ? "Fijo" : "Flexible")}${item.done ? `, ${t("Completado ✓")}` : ""}${item.movable ? `. ${t("Flechas para mover, Enter para abrir.")}` : ""}`}
-              className={`${item.cls} absolute inset-x-0.5 z-[5] flex min-h-0 select-none flex-col items-stretch justify-start overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm [-webkit-touch-callout:none] ${item.locked ? "border-fixed bg-fixed-soft" : "border-amber bg-amber-soft"} ${item.active ? "ring-1 ring-sage" : ""} ${item.done ? "opacity-60" : ""} ${moving ? "opacity-40" : ""} ${item.movable ? "cursor-grab active:cursor-grabbing" : ""}`}
+              className={`${item.cls} absolute inset-x-0.5 z-[5] flex min-h-0 select-none flex-col items-stretch justify-start gap-0.5 overflow-hidden rounded-lg border-l-[3px] px-2 py-1 text-left text-[13px] leading-[1.15] shadow-sm [-webkit-touch-callout:none] ${item.locked ? "border-fixed bg-fixed-soft" : "border-amber bg-amber-soft"} ${item.active ? "ring-1 ring-sage" : ""} ${item.done ? "opacity-75" : ""} ${moving ? "opacity-40" : ""} ${item.movable ? "cursor-grab active:cursor-grabbing" : ""}`}
               onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } router.push(`/?date=${day.date}#event-${item.id}`); }}
               onKeyDown={event => keyMove(event, item)} onBlur={() => { if (drag?.keys && !pending) setDrag(null); }}
               onContextMenu={event => { if (gesture.current?.touch) event.preventDefault(); }}
@@ -130,11 +131,11 @@ export function TimeGridBoard({ days, items, windows, range, nowDay, css, nonce 
                 commit(item, current.target);
               }}
               onPointerCancel={cancelGesture}>
-              <span className="block truncate font-semibold">{item.title}{item.done ? " ✓" : ""}</span>
-              {item.end - item.start >= 30 && <span className="block truncate tabular-nums text-muted">{clock(item.start)}–{clock(item.end)}</span>}
+              <span className="line-clamp-2 shrink-0 break-words font-semibold">{item.title}{item.done ? " ✓" : ""}</span>
+              <span className="block shrink-0 truncate text-[11px] leading-tight tabular-nums text-muted">{clock(item.start)}–{clock(item.end)}</span>
             </button>;
           })}
-          {drag && dragged && drag.day === index && <div aria-hidden="true" className="tg-preview pointer-events-none absolute inset-x-0.5 z-20 overflow-hidden rounded-md border-2 border-dashed border-sage bg-sage-soft/90 px-1.5 py-0.5 text-[11px] font-semibold leading-tight tabular-nums text-sage shadow-md">{clock(drag.start)}–{clock(drag.start + dragged.end - dragged.start)}</div>}
+          {drag && dragged && drag.day === index && <div aria-hidden="true" className="tg-preview pointer-events-none absolute inset-x-0.5 z-20 overflow-hidden rounded-lg border-2 border-dashed border-sage bg-sage-soft/90 px-2 py-1 text-xs font-semibold leading-tight tabular-nums text-sage shadow-md">{clock(drag.start)}–{clock(drag.start + dragged.end - dragged.start)}</div>}
         </div>)}
       </div>
     </div>

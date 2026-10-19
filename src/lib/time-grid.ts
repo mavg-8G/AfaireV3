@@ -2,7 +2,7 @@ import { addLocalDays, formatTime } from "./time";
 
 export const GRID_STEP = 15;
 /** Shortest height a block is drawn with, in minutes, so its title stays readable. */
-export const GRID_MIN_BLOCK = 20;
+export const GRID_MIN_BLOCK = 30;
 export type GridSegment = { id: string; start: number; end: number };
 export type GridItem = {
   id: string; cls: string; title: string; day: number; start: number; end: number; lane: number; lanes: number;
@@ -51,16 +51,22 @@ export function shiftSlot(date: string, minute: number, delta: number) {
 }
 const percent = (value: number) => `${Math.round(value * 1000) / 1000}%`;
 export function gridClass(id: string, day: number) { return `tg-${id.replace(/[^A-Za-z0-9_-]/g, "")}-${day}`; }
+/** The rendered interval, including room for short titles without overflowing the day. */
+export function displayedInterval(start: number, end: number, range: { start: number; end: number }, minimum = 0) {
+  start = Math.max(range.start, start); end = Math.min(range.end, end);
+  if (end > start && end - start < minimum) {
+    end = Math.min(range.end, start + minimum); start = Math.max(range.start, end - minimum);
+  }
+  return { start, end };
+}
 /** Positions come from a nonce stylesheet because the CSP forbids inline style attributes. */
-export function gridCss(range: { start: number; end: number }, placed: { cls: string; start: number; end: number; lane?: number; lanes?: number; min?: number }[], hourRem = 3.25) {
+export function gridCss(range: { start: number; end: number }, placed: { cls: string; start: number; end: number; lane?: number; lanes?: number; min?: number }[], hourRem = 7) {
   const span = range.end - range.start;
   const rules = [`.tg-body{height:${(span / 60) * hourRem}rem}`];
   for (const item of placed) {
     if (!/^[A-Za-z0-9_-]+$/.test(item.cls)) continue;
-    let start = Math.max(range.start, item.start); let end = Math.min(range.end, item.end);
+    const { start, end } = displayedInterval(item.start, item.end, range, item.min);
     if (end <= start) { rules.push(`.${item.cls}{display:none}`); continue; }
-    // Short blocks grow downwards to the minimum height, or upwards when they sit at the end of the grid.
-    if (item.min && end - start < item.min) { end = Math.min(range.end, start + item.min); start = Math.max(range.start, end - item.min); }
     const lanes = item.lanes ?? 1; const lane = item.lane ?? 0;
     rules.push(`.${item.cls}{top:${percent(((start - range.start) / span) * 100)};height:${percent(((end - start) / span) * 100)}${lanes > 1 ? `;left:${percent((lane / lanes) * 100)};width:${percent(100 / lanes)}` : ""}}`);
   }

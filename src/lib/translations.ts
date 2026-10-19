@@ -800,6 +800,7 @@ export const english: Record<string, string> = {
   "Revisa la fecha y la hora.": "Check the date and time.",
   "Mover «{0}» a {1}, {2}. Enter confirma, Escape cancela.": "Move “{0}” to {1}, {2}. Enter confirms, Escape cancels.",
   "Flechas para mover, Enter para abrir.": "Arrow keys to move, Enter to open.",
+  "Desliza el calendario para ver los demás días.": "Swipe the calendar to see the other days.",
   "Arrastra un bloque pendiente para moverlo; en pantallas táctiles, mantenlo pulsado antes de arrastrar. Con teclado: flechas para elegir el horario (Mayús mueve una hora), Enter para confirmar y Escape para cancelar. El bloque movido queda fijo.": "Drag a pending block to move it; on touch screens, press and hold before dragging. With the keyboard: arrow keys choose the time (Shift moves one hour), Enter confirms and Escape cancels. A moved block becomes fixed.",
   "Mover bloque": "Move block",
   "15 min antes": "15 min earlier",

@@ -405,3 +405,6 @@ dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
 
 /* The same Impulso silhouette is white by day and dark on coral by night. */
 .brand-mark { background: var(--accent); color: var(--brand-mark); }
+
+/* The weekly calendar uses the full workspace instead of the reading-width page limit. */
+.app-main:has(> .calendar-page) { max-width: none; }
