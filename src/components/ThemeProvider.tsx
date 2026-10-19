@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { DeviceIcon, MoonIcon, SunIcon } from "./Icons";
 
 export type Theme = "system" | "light" | "dark";
-export const THEME_COLORS = { light: "#f2f4f1", dark: "#0e1412" } as const;
+export const THEME_COLORS = { light: "#f6f4ee", dark: "#0e0d1b" } as const;
 const ThemeContext = createContext<{ theme: Theme; change: (theme: Theme) => void } | null>(null);
 
 export function ThemeProvider({ initialTheme, children }: { initialTheme: Theme; children: React.ReactNode }) {
