@@ -404,6 +404,7 @@ export const english: Record<string, string> = {
   "Minutos reales": "Actual minutes",
   "Momento preferido": "Preferred time",
   "Más opciones": "More options",
+  "Más": "More",
   "No pudimos abrir tu agenda": "We couldn't open your planner",
   "No se autorizó el permiso. Puedes cambiarlo en los ajustes del navegador.": "Permission was not granted. You can change it in your browser settings.",
   "No se pudieron configurar los avisos.": "Notifications could not be configured.",

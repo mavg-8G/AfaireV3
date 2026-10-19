@@ -375,6 +375,11 @@ dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
   .app-main { padding-bottom: 3rem; padding-left: 2.5rem; padding-right: 2.5rem; }
 }
 .topbar { padding-top: var(--safe-top); }
+/* Tabs react on touch-down: no double-tap zoom wait and no grey tap flash. */
+.tab-target { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.more-sheet { max-height: 85dvh; padding-bottom: calc(var(--safe-bottom) + 1.25rem); }
+.more-sheet[open] { animation: sheet-in .22s var(--ease-out) both; }
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
 .floating-above-tabbar { bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 1.5rem); }
 @media (min-width: 1024px) { .floating-above-tabbar { bottom: 1.5rem; } }
 
