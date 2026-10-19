@@ -25,7 +25,7 @@ export const LogoutIcon = (p: IconProps) => <Svg {...p}><path d="M14 4.5h4a1.5 1
 export const KeyIcon = (p: IconProps) => <Svg {...p}><circle cx="8" cy="15" r="4" /><path d="m11 12 8.5-8.5M16.5 6.5l2.5 2.5M14.5 8.5l2 2" /></Svg>;
 
 export function BrandMark({ className = "size-9" }: IconProps) {
-  return <span aria-hidden="true" className={`grid shrink-0 place-items-center rounded-[30%] bg-sage text-white ${className}`}>
+  return <span aria-hidden="true" className={`grid shrink-0 place-items-center rounded-[30%] bg-linear-to-br from-hero to-hero-end text-on-hero shadow-sm ${className}`}>
     <svg viewBox="140 117 280 280" className="size-[62%]" fill="currentColor"><path d="M174 218c6-48 37-76 84-76 61 0 86 33 86 88v130h-42v-22c-16 19-37 29-65 29-43 0-73-27-73-64 0-46 40-70 108-70h29v-7c0-31-15-46-43-46-26 0-41 13-45 38zm127 51h-25c-42 0-68 11-68 32 0 19 13 31 36 31 32 0 57-21 57-54z" /><circle cx="380" cy="346" r="20" /></svg>
   </span>;
 }

@@ -20,6 +20,10 @@ const links = [
   { href: "/settings", label: "Ajustes", Icon: SettingsIcon },
 ];
 
+// The CSP forbids inline styles, so the sliding indicators move through fixed translate classes, one per link.
+const rail = ["translate-y-0", "translate-y-12", "translate-y-24", "translate-y-36", "translate-y-48", "translate-y-60"];
+const slide = ["translate-x-0", "translate-x-full", "translate-x-[200%]", "translate-x-[300%]", "translate-x-[400%]", "translate-x-[500%]"];
+
 function isCurrent(path: string, href: string) {
   return href === "/" ? path === "/" || path === "/check-in" : path === href || path.startsWith(href + "/");
 }
@@ -47,11 +51,11 @@ function AccountMenu({ name }: { name: string }) {
   }
 
   return <><details ref={account} className="account-menu relative">
-    <summary aria-label={t(`Cuenta de ${name}`)} className="flex size-11 items-center justify-center rounded-full border border-line bg-card text-sm font-semibold text-sage transition hover:border-sage lg:size-auto lg:w-full lg:justify-start lg:gap-3 lg:rounded-2xl lg:border-transparent lg:bg-transparent lg:p-2 lg:hover:bg-card">
+    <summary aria-label={t(`Cuenta de ${name}`)} className="flex size-11 items-center justify-center rounded-full border border-line bg-card text-sm font-semibold text-sage transition hover:border-sage lg:size-auto lg:w-full lg:justify-start lg:gap-3 lg:rounded-2xl lg:p-2 lg:shadow-sm">
       <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-sage-soft text-sage lg:size-9">{initials || "A"}</span>
       <span className="hidden min-w-0 flex-1 truncate text-left text-sm font-medium text-ink lg:block">{name}</span>
     </summary>
-    <div className="absolute right-0 top-full z-40 mt-2 w-[min(20rem,calc(100vw-2rem))] space-y-4 rounded-2xl border border-line bg-card p-4 shadow-lg lg:bottom-full lg:left-0 lg:right-auto lg:top-auto lg:mb-2 lg:mt-0">
+    <div className="absolute right-0 top-full z-40 mt-2 w-[min(20rem,calc(100vw-2rem))] space-y-4 rounded-3xl border border-line bg-card p-4 shadow-lg lg:bottom-full lg:left-0 lg:right-auto lg:top-auto lg:mb-2 lg:mt-0">
       <div><p className="text-xs text-muted">{t("Tu cuenta")}</p><p className="mt-0.5 break-words text-sm font-semibold">{name}</p></div>
       <ThemePicker />
       <div className="space-y-1 border-t border-line pt-3">
@@ -68,6 +72,7 @@ function AccountMenu({ name }: { name: string }) {
 
 export function AppNav({ name }: { name: string }) {
   const { t } = useI18n(); const path = usePathname();
+  const active = links.findIndex(({ href }) => isCurrent(path, href));
   return <>
     {/* Phones and tablets: slim top bar */}
     <header className="topbar sticky top-0 z-30 border-b border-line/70 bg-paper/85 backdrop-blur-xl backdrop-saturate-150 lg:hidden">
@@ -80,12 +85,13 @@ export function AppNav({ name }: { name: string }) {
     {/* Desktop: persistent sidebar */}
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-sunken/60 px-4 py-6 lg:flex">
       <Link href="/" className="flex items-center gap-3 px-2 font-display text-2xl font-semibold tracking-tight"><BrandMark />Afaire</Link>
-      <nav aria-label={t("Principal")} className="mt-10 flex flex-col gap-1">
+      <nav aria-label={t("Principal")} className="relative mt-10 flex flex-col gap-1">
+        <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-11 rounded-xl bg-card shadow-sm transition-transform duration-300 ease-(--ease-out) ${active < 0 ? "opacity-0" : rail[active]}`} />
         {links.map(({ href, label, Icon }) => {
           const current = isCurrent(path, href);
           return <Link key={href} href={href} aria-current={current ? "page" : undefined}
-            className={`group flex items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition ${current ? "bg-card text-ink shadow-sm" : "text-muted hover:bg-card/60 hover:text-ink"}`}>
-            <Icon className={`size-5 ${current ? "text-sage" : ""}`} />{t(label)}
+            className={`group relative flex items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors ${current ? "text-ink" : "text-muted hover:bg-card/60 hover:text-ink"}`}>
+            <Icon className={`size-5 transition-transform duration-200 group-hover:scale-110 ${current ? "text-sage" : ""}`} />{t(label)}
           </Link>;
         })}
       </nav>
@@ -96,19 +102,22 @@ export function AppNav({ name }: { name: string }) {
     </aside>
 
     {/* Phones and tablets: bottom tab bar */}
-    <nav aria-label={t("Principal")} className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-line/70 bg-card/90 backdrop-blur-xl backdrop-saturate-150 lg:hidden">
-      <ul className="mx-auto grid h-(--tabbar-height) max-w-xl grid-cols-6">
-        {links.map(({ href, label, Icon }) => {
-          const current = isCurrent(path, href);
-          return <li key={href} className="min-w-0">
-            <Link href={href} aria-current={current ? "page" : undefined}
-              className={`flex h-full flex-col items-center justify-center gap-1 px-0.5 text-[10.5px] font-semibold leading-none transition ${current ? "text-sage" : "text-muted active:text-ink"}`}>
-              <span className={`grid h-7 w-12 place-items-center rounded-full transition duration-150 active:scale-95 ${current ? "bg-sage-soft" : ""}`}><Icon className="size-[21px]" /></span>
-              <span className="max-w-full truncate">{t(label)}</span>
-            </Link>
-          </li>;
-        })}
-      </ul>
-    </nav>
+    <div className="tabbar pointer-events-none fixed inset-x-0 bottom-0 z-30 lg:hidden">
+      <nav aria-label={t("Principal")} className="pointer-events-auto relative mx-auto h-(--tabbar-height) max-w-xl rounded-3xl border border-line bg-card/90 shadow-lg backdrop-blur-xl backdrop-saturate-150">
+        <span aria-hidden="true" className={`absolute inset-y-1.5 left-0 w-1/6 p-0.5 transition-transform duration-300 ease-(--ease-out) ${active < 0 ? "opacity-0" : slide[active]}`}><span className="block size-full rounded-2xl bg-sage-soft" /></span>
+        <ul className="relative grid h-full grid-cols-6">
+          {links.map(({ href, label, Icon }) => {
+            const current = isCurrent(path, href);
+            return <li key={href} className="min-w-0">
+              <Link href={href} aria-current={current ? "page" : undefined}
+                className={`flex h-full flex-col items-center justify-center gap-1 px-0.5 text-[10.5px] font-semibold leading-none transition duration-150 active:scale-95 ${current ? "text-sage" : "text-muted active:text-ink"}`}>
+                <Icon className="size-[21px]" />
+                <span className="max-w-full truncate">{t(label)}</span>
+              </Link>
+            </li>;
+          })}
+        </ul>
+      </nav>
+    </div>
   </>;
 }

@@ -342,10 +342,11 @@ dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* Fixed bottom tab bar on phones and tablets. */
+/* The bar floats .75rem above the screen edge, inset from the sides. */
 .tabbar {
-  padding-bottom: var(--safe-bottom);
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
+  padding-bottom: calc(var(--safe-bottom) + .75rem);
+  padding-left: max(.75rem, var(--safe-left));
+  padding-right: max(.75rem, var(--safe-right));
 }
 .app-main {
   padding-left: max(1.25rem, var(--safe-left));
@@ -356,7 +357,7 @@ dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
   .app-main { padding-bottom: 3rem; padding-left: 2.5rem; padding-right: 2.5rem; }
 }
 .topbar { padding-top: var(--safe-top); }
-.floating-above-tabbar { bottom: calc(var(--tabbar-height) + var(--safe-bottom) + .75rem); }
+.floating-above-tabbar { bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 1.5rem); }
 @media (min-width: 1024px) { .floating-above-tabbar { bottom: 1.5rem; } }
 
 .scrollbar-none { scrollbar-width: none; }
