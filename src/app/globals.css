@@ -335,6 +335,19 @@ select.field {
 @keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
 details[open] > :not(summary) { animation: rise var(--dur-base) ease-out both; }
 
+/* Progress and completion: bars grow in, rings draw in, the completed label pops. */
+.bar-grow { transform-origin: left; animation: bar-grow .9s var(--ease-out) both; }
+@keyframes bar-grow { from { transform: scaleX(0); } to { transform: none; } }
+.ring-fill { animation: ring-in 1.2s var(--ease-out) backwards; }
+@keyframes ring-in { from { stroke-dashoffset: 314.16; } }
+.check-pop { display: inline-block; animation: check-pop .4s var(--ease-out) both; }
+@keyframes check-pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: none; } }
+
+progress { appearance: none; height: .5rem; border: 0; border-radius: 999px; overflow: hidden; background: var(--sunken); }
+progress::-webkit-progress-bar { background: var(--sunken); }
+progress::-webkit-progress-value { border-radius: 999px; background: linear-gradient(90deg, var(--hero), var(--sage)); transition: width .7s var(--ease-out); }
+progress::-moz-progress-bar { border-radius: 999px; background: var(--sage); }
+
 /* Native dialogs fade and scale in; the backdrop fades separately. */
 dialog[open] { animation: dialog-in .2s ease-out both; }
 dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
