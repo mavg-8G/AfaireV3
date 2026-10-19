@@ -28,13 +28,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...baseMetadata,
     icons: {
-      icon: [
-        { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
-        ...variants.map(value => ({
-          url: `/pwa/favicon${value === "dark" ? "-dark" : ""}.svg?v=3`, type: "image/svg+xml",
-          ...(theme === "system" ? { media: `(prefers-color-scheme: ${value})` } : {}),
-        })),
-      ],
+      icon: variants.flatMap(value => {
+        const media = theme === "system" ? { media: `(prefers-color-scheme: ${value})` } : {};
+        return [
+          { url: `/pwa/impulso-${value}.ico`, type: "image/x-icon", sizes: "16x16 32x32 48x48", ...media },
+          { url: `/pwa/impulso-${value}.svg`, type: "image/svg+xml", sizes: "any", ...media },
+          // Raster fallback for browsers that retain an older ICO or ignore SVG candidates.
+          { url: `/pwa/impulso-${value}-32.png`, type: "image/png", sizes: "32x32", ...media },
+        ];
+      }),
       apple: variants.map(value => ({
         url: `/pwa/apple-touch-icon${value === "dark" ? "-dark" : ""}.png?v=3`, sizes: "180x180", type: "image/png",
         ...(theme === "system" ? { media: `(prefers-color-scheme: ${value})` } : {}),

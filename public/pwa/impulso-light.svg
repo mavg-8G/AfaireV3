@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ff795e"/>
+  <g id="mark" color="#ffffff" fill="currentColor">
+    <path d="m107 365 112-228q13-26 37-26t37 26l112 228h-79l-70-151-70 151z"/>
+    <path d="m196 345 49 43 106-117" fill="none" stroke="currentColor" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
