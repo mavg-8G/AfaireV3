@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Organiza tus citas, hábitos y tareas con una agenda que aprende contigo.",
     lang: "es", dir: "ltr", start_url: "/", scope: "/",
     display: "standalone", display_override: ["standalone", "minimal-ui"],
-    background_color: "#f2f4f1", theme_color: "#1f6f5c",
+    background_color: "#f6f4ee", theme_color: "#4338ca",
     categories: ["productivity", "lifestyle"], prefer_related_applications: false,
     icons: [
       { src: "/pwa/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
