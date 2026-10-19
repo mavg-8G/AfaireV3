@@ -316,7 +316,6 @@ select.field {
 }
 @media (min-width: 640px) { .day-rail::before { left: 5.25rem; } }
 
-.live-dot { position: relative; }
 .live-dot::after {
   content: ""; position: absolute; inset: -4px; border-radius: 999px;
   border: 2px solid currentColor; opacity: .5;
