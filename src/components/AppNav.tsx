@@ -80,8 +80,11 @@ function AccountMenu({ name }: { name: string }) {
 export function AppNav({ name }: { name: string }) {
   const { t } = useI18n(); const actualPath = usePathname();
   // Highlight the tapped destination at once instead of waiting for the server render to arrive.
-  const [tapped, setTapped] = useState<{ from: string; href: string } | null>(null);
-  const path = tapped && tapped.from === actualPath ? tapped.href : actualPath;
+  const [tapped, setTapped] = useState({ from: actualPath, href: actualPath });
+  // Discard the optimistic selection once the route changes. Otherwise returning to
+  // its old source with Back would revive the previous destination's highlight.
+  if (tapped.from !== actualPath) setTapped({ from: actualPath, href: actualPath });
+  const path = tapped.from === actualPath ? tapped.href : actualPath;
   const more = useRef<HTMLDialogElement>(null);
   const go = (href: string) => (event: React.MouseEvent) => { more.current?.close(); if (plainClick(event) && !isCurrent(actualPath, href)) setTapped({ from: actualPath, href }); };
   const active = links.findIndex(({ href }) => isCurrent(path, href));
