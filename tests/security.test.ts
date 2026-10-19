@@ -25,11 +25,11 @@ test("production CSP authorizes only nonce scripts and same-origin workers", () 
   assert.doesNotMatch(contentSecurityPolicy("abcd", true, false), /upgrade-insecure-requests/);
 });
 const valid = { NODE_ENV: "production", AUTH_SECRET: "f".repeat(64), NEXTAUTH_URL: "https://agenda.example.com", DATABASE_URL: "postgresql://user:password@db/app", REGISTRATION_MODE: "invite", REGISTRATION_CODE: "a".repeat(32) };
-test("private redirects use the configured public origin, never an untrusted host", () => {
+test("private redirects use the configured public origin, never an untrusted host", async () => {
   const previous = process.env.NEXTAUTH_URL;
   try {
     process.env.NEXTAUTH_URL = "https://afaire.espectro.uk";
-    const response = proxy(new NextRequest("http://internal:3000/inbox", { headers: { host: "evil.invalid", "x-forwarded-host": "evil.invalid" } }));
+    const response = await proxy(new NextRequest("http://internal:3000/inbox", { headers: { host: "evil.invalid", "x-forwarded-host": "evil.invalid" } }));
     assert.equal(response.headers.get("location"), "https://afaire.espectro.uk/login");
   } finally {
     if (previous === undefined) delete process.env.NEXTAUTH_URL; else process.env.NEXTAUTH_URL = previous;
@@ -41,20 +41,20 @@ test("startup rejects unsafe production configuration without disclosing secrets
   validateRuntimeEnvironment({ ...valid, NEXTAUTH_URL: "http://127.0.0.1:3000", REGISTRATION_MODE: "open", REGISTRATION_CODE: undefined });
   assert.throws(() => validateRuntimeEnvironment({ ...valid, REGISTRATION_MODE: undefined, REGISTRATION_CODE: undefined }));
 });
-test("proxy replaces attacker-supplied CSP nonces and prevents caching", () => {
+test("proxy replaces attacker-supplied CSP nonces and prevents caching", async () => {
   const request = () => new NextRequest("http://localhost:3000/login", { headers: { "x-nonce": "attacker", "Content-Security-Policy": "script-src *" } });
-  const first = proxy(request()); const second = proxy(request());
+  const first = await proxy(request()); const second = await proxy(request());
   assert.match(first.headers.get("Content-Security-Policy")!, /nonce-/);
   assert.doesNotMatch(first.headers.get("Content-Security-Policy")!, /attacker/);
   assert.notEqual(first.headers.get("Content-Security-Policy"), second.headers.get("Content-Security-Policy"));
   assert.match(first.headers.get("Cache-Control")!, /no-store/);
   assert.equal(first.headers.get("X-Frame-Options"), "DENY");
 });
-test("proxy blocks cross-site and originless mutations before authentication", () => {
+test("proxy blocks cross-site and originless mutations before authentication", async () => {
   const cases: Record<string, string>[] = [{ origin: "https://evil.invalid" }, {}, { origin: "http://localhost:3000", "sec-fetch-site": "cross-site" }];
   for (const headers of cases) {
-    assert.equal(proxy(new NextRequest("http://localhost:3000/api/auth/callback/credentials", { method: "POST", headers })).status, 403);
+    assert.equal((await proxy(new NextRequest("http://localhost:3000/api/offline-changes", { method: "POST", headers }))).status, 403);
   }
-  assert.equal(proxy(new NextRequest("http://localhost:3000/api/auth/callback/credentials", { method: "POST", headers: { origin: "http://localhost:3000" } })).status, 200);
-  assert.equal(proxy(new NextRequest("http://localhost:3000/")).status, 307);
+  assert.equal((await proxy(new NextRequest("http://localhost:3000/api/auth/callback/credentials", { method: "POST", headers: { origin: "http://localhost:3000" } }))).status, 200);
+  assert.equal((await proxy(new NextRequest("http://localhost:3000/"))).status, 307);
 });

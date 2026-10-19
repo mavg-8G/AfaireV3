@@ -209,6 +209,22 @@ model AccessAttempt {
   expiresAt DateTime @db.Timestamptz(3)
 }
 
+model AuthAuditEvent {
+  id         String   @id
+  occurredAt DateTime @default(now()) @db.Timestamptz(3)
+  requestId  String
+  outcome    String
+  reason     String
+  stage      String
+  accountRef String?
+  clientRef  String?
+  errorCode  String?
+
+  @@index([occurredAt])
+  @@index([requestId])
+  @@index([accountRef, occurredAt])
+}
+
 model OfflineMutation {
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

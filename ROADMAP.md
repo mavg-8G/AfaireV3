@@ -4,6 +4,8 @@ Actualizada el 18 de octubre de 2026. Este documento recoge prioridades de produ
 
 ## Estado actual
 
+La auditoría de login emite eventos estructurados a Docker/Dockhand y los guarda en PostgreSQL durante 30 días con el worker activo. Distingue límites, proxy, validación, credenciales, CSRF, origen y errores internos sin guardar secretos. Un panel administrativo de búsqueda de estos eventos queda pendiente; se consultan mediante logs o SQL.
+
 El código incluye planificación automática, citas y tareas recurrentes simples, división opcional de tareas, hábitos, disponibilidad adaptable, vista horaria de día y semana, movimiento de bloques pendientes, revisión semanal, ajustes organizados por pestañas con contraseña y sesiones en el menú de cuenta, avisos Web Push y una copia editable de hoy sin conexión. La versión del paquete es 3.0.0; publicar código en GitHub y actualizar el VPS son pasos separados.
 
 ## Próximas prioridades

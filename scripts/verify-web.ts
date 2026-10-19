@@ -4,9 +4,11 @@ import { randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { ymdInZone, addLocalDays, dateOnly } from "../src/lib/time";
 import { createPrismaClient } from "../src/lib/prisma-client";
+import { authReference } from "../src/lib/auth-audit";
 const base = new URL(process.env.TEST_BASE_URL ?? "http://127.0.0.1:3000");
 if (!["127.0.0.1", "localhost", "[::1]"].includes(base.hostname)) throw new Error("Esta comprobación crea cuentas temporales y solo admite un servidor local de pruebas.");
 const prisma = createPrismaClient(); const ids: string[] = []; let checks = 0;
+const auditRefs: string[] = [], auditRequests: string[] = [];
 function check(message: string, assertion: () => void) { assertion(); checks++; console.log(`✓ ${message}`); }
 function collectCookies(response: Response, jar: Map<string, string>) {
   for (const cookie of response.headers.getSetCookie()) { const pair = cookie.split(";")[0]; const split = pair.indexOf("="); jar.set(pair.slice(0, split), pair.slice(split + 1)); }
@@ -21,6 +23,8 @@ async function login(email: string, password: string) {
     body: new URLSearchParams({ email, password, csrfToken, json: "true", callbackUrl: base.origin }), redirect: "manual",
   });
   collectCookies(response, jar);
+  const requestId = response.headers.get("x-afaire-request-id");
+  if (requestId) auditRequests.push(requestId);
   assert.ok(response.ok, `Login HTTP ${response.status}`);
   const sessionCookie = response.headers.getSetCookie().find(cookie => /(?:__Secure-)?next-auth\.session-token=/.test(cookie));
   assert.ok(sessionCookie, "No se creó una sesión.");
@@ -61,6 +65,7 @@ try {
   check("Agenda inaccesible sin sesión", () => { assert.equal(anonymous.status, 307); assert.match(anonymous.headers.get("location") ?? "", /\/login$/); });
   const stamp = randomBytes(10).toString("hex"); const password = randomBytes(24).toString("hex");
   const emailA = `http-a-${stamp}@example.invalid`; const emailB = `http-b-${stamp}@example.invalid`;
+  auditRefs.push(authReference("account", emailA), authReference("account", emailB));
   const titleA = `Privado A ${stamp}`; const titleB = `<img src=x onerror=alert('${stamp}')>`;
   for (const [email, title] of [[emailA, titleA], [emailB, titleB]]) {
     const user = await prisma.user.create({ data: { name: "Prueba HTTP", email, passwordHash: await bcrypt.hash(password, 12), onboardingCompleted: true, events: { create: { title, startsAt: new Date(), endsAt: new Date(Date.now() + 30 * 60_000) } }, tasks: { create: { title, durationMinutes: 30 } } } });
@@ -71,6 +76,21 @@ try {
   await prisma.workerRun.create({ data: { userId: ids[0], date: new Date("2030-04-15T00:00Z"), kind: "PUSH", status: "FAILED", message: "Proveedor push: HTTP 503" } });
   await prisma.task.create({ data: { userId: ids[0], title: "Plazo en riesgo", durationMinutes: 480, dueDate: dateOnly(addLocalDays(ymdInZone(new Date(), "America/Guayaquil"), -1)) } });
   const authA = await login(emailA, password); const authB = await login(emailB, password);
+  const loginAudit = await prisma.authAuditEvent.findFirst({ where: { accountRef: auditRefs[0], reason: "LOGIN_SUCCESS" } });
+  check("Login exitoso persistido y correlacionado con la petición HTTP", () => { assert.ok(loginAudit); assert.ok(auditRequests.includes(loginAudit.requestId)); });
+  const badLogin = await fetch(new URL("/api/auth/callback/credentials", base), {
+    method: "POST", headers: { origin: base.origin, cookie: cookieHeader(authA.jar) },
+    body: new URLSearchParams({ email: emailA, password: "wrong-password", csrfToken: authA.csrfToken, json: "true", callbackUrl: base.origin }), redirect: "manual",
+  });
+  const badRequestId = badLogin.headers.get("x-afaire-request-id");
+  if (badRequestId) auditRequests.push(badRequestId);
+  const badAudit = await prisma.authAuditEvent.findFirst({ where: { requestId: badRequestId ?? "missing" } });
+  check("Login fallido persiste la causa sin exponerla ni filtrar credenciales", () => {
+    assert.equal(badAudit?.reason, "PASSWORD_MISMATCH");
+    assert.equal(badLogin.status, 401);
+    assert.doesNotMatch(JSON.stringify(badAudit), /wrong-password/);
+    assert.ok(!badLogin.headers.getSetCookie().some(cookie => /next-auth\.session-token=/.test(cookie)));
+  });
   const inboxA = await fetch(new URL("/inbox", base), { headers: { cookie: cookieHeader(authA.jar) } }); const bodyA = await inboxA.text();
   const inboxB = await fetch(new URL("/inbox", base), { headers: { cookie: cookieHeader(authB.jar) } }); const bodyB = await inboxB.text();
   check("Aislamiento entre cuentas y escape de contenido HTML", () => {
@@ -144,6 +164,17 @@ try {
     method: "POST", headers: { origin: base.origin }, body: new URLSearchParams({ email: emailA, password, json: "true" }), redirect: "manual",
   });
   check("Login sin token CSRF no emite sesión", () => assert.ok(!missingCsrf.headers.getSetCookie().some(cookie => /next-auth\.session-token=/.test(cookie))));
+  const csrfRequestId = missingCsrf.headers.get("x-afaire-request-id");
+  if (csrfRequestId) auditRequests.push(csrfRequestId);
+  const csrfAudit = await prisma.authAuditEvent.findFirst({ where: { requestId: csrfRequestId ?? "missing" } });
+  check("Rechazo CSRF registrado aunque no se compruebe la contraseña", () => assert.equal(csrfAudit?.reason, "CSRF_REJECTED"));
+  const foreignLogin = await fetch(new URL("/api/auth/callback/credentials", base), {
+    method: "POST", headers: { origin: "https://foreign.invalid" }, body: new URLSearchParams({ email: emailA, password, json: "true" }),
+  });
+  const originRequestId = foreignLogin.headers.get("x-afaire-request-id");
+  if (originRequestId) auditRequests.push(originRequestId);
+  const originAudit = await prisma.authAuditEvent.findFirst({ where: { requestId: originRequestId ?? "missing" } });
+  check("Rechazo de origen registrado desde el proxy sin permitir el acceso", () => { assert.equal(foreignLogin.status, 403); assert.equal(originAudit?.reason, "ORIGIN_REJECTED"); });
   const secondA = await login(emailA, password);
   const currentA = await prisma.deviceSession.findFirstOrThrow({ where: { userId: ids[0] }, orderBy: { createdAt: "asc" } });
   const otherA = await prisma.deviceSession.findFirstOrThrow({ where: { userId: ids[0], id: { not: currentA.id } } });
@@ -168,6 +199,7 @@ try {
   check("La cookie copiada antes de salir tampoco permite recuperar la sesión", () => assert.equal(replayLogout.status, 307));
   console.log(`${checks} comprobaciones HTTP correctas.`);
 } finally {
+  await prisma.authAuditEvent.deleteMany({ where: { OR: [{ accountRef: { in: auditRefs } }, { requestId: { in: auditRequests } }] } });
   if (ids.length) await prisma.user.deleteMany({ where: { id: { in: ids } } });
   await prisma.$disconnect();
 }

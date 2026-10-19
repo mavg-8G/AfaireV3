@@ -9,6 +9,7 @@ validateRuntimeEnvironment(process.env);
 let stopping = false; let wake: (() => void) | undefined;
 for (const signal of ["SIGTERM", "SIGINT"] as const) process.once(signal, () => { stopping = true; wake?.(); });
 async function main() {
+  console.log(JSON.stringify({ time: new Date().toISOString(), service: "afaire-worker", event: "WORKER_STARTED" }));
   let delay = 60_000;
   while (!stopping) {
     try {
@@ -33,5 +34,6 @@ async function main() {
     });
   }
   await prisma.$disconnect();
+  console.log(JSON.stringify({ time: new Date().toISOString(), service: "afaire-worker", event: "WORKER_STOPPED" }));
 }
 main().catch(() => { process.exitCode = 1; });

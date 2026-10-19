@@ -1,5 +1,13 @@
 # Pruebas locales de agenda y avisos
 
+## Auditoría de accesos · 18 de octubre de 2026
+
+Validación local: 121 pruebas unitarias, 91 de integración y 54 comprobaciones HTTP correctas; tipos, lint, build de producción y builds de worker/administración correctos. Migración `20261019001000_auth_audit` aplicada a la base local del puerto 55439.
+
+Se verificaron rechazos por proxy ausente/inválido, límites por cuenta/IP, cuenta inexistente, contraseña distinta, CSRF y origen externo; también accesos correctos y errores internos. Las peticiones HTTP reales generan líneas JSON en la salida del proceso y filas correlacionadas en PostgreSQL. Se comprobó la exclusión de secretos y el comportamiento cuando falla la escritura de auditoría. Estas pruebas no identifican retrospectivamente la causa del fallo actual del VPS.
+
+Tras desplegar las nuevas imágenes con su migración, abrir Logs de `afaire-web` en Dockhand o ejecutar `docker compose logs --since=5m afaire-web`. Realizar un intento fallido y buscar `AUTH_LOGIN`, `reason`, `stage` y `requestId`; consultar la misma petición en `AuthAuditEvent` mediante el SQL del README. Las sesiones existentes deben seguir activas. El worker muestra su arranque y solo informa actividad cuando tiene trabajo o errores; la retención requiere mantenerlo activo.
+
 ## Validación del programa de hábitos · 18 de octubre de 2026
 
 - 119 pruebas unitarias y 87 pruebas de integración correctas. Tras la corrección de minutos mínimos se repitieron las 13 pruebas de integración de transparencia.

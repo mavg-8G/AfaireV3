@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { randomBytes } from "node:crypto";
 import { contentSecurityPolicy, isAllowedOrigin, PRIVATE_CACHE, SECURITY_HEADERS } from "./lib/security";
-export function proxy(request: NextRequest) {
+import { auditLoginRequest, recordAuthAudit } from "./lib/auth-audit";
+export async function proxy(request: NextRequest) {
   const configuredUrl = process.env.NEXTAUTH_URL ?? request.url;
   const nonce = randomBytes(16).toString("base64");
   const https = new URL(configuredUrl).protocol === "https:";
@@ -18,7 +19,11 @@ export function proxy(request: NextRequest) {
   };
   if (!["GET", "HEAD", "OPTIONS"].includes(request.method) &&
       (request.headers.get("sec-fetch-site") === "cross-site" || !isAllowedOrigin(request.headers.get("origin"), configuredUrl))) {
-    return decorate(NextResponse.json({ error: "Solicitud de otro origen rechazada." }, { status: 403 }));
+    if (request.method !== "POST" || request.nextUrl.pathname !== "/api/auth/callback/credentials") return decorate(NextResponse.json({ error: "Solicitud de otro origen rechazada." }, { status: 403 }));
+    return auditLoginRequest(request, async () => {
+      await recordAuthAudit({ outcome: "REJECTED", reason: "ORIGIN_REJECTED", stage: "PROXY" });
+      return decorate(NextResponse.json({ error: "Solicitud de otro origen rechazada." }, { status: 403 }));
+    });
   }
   const token = request.cookies.get("next-auth.session-token") ?? request.cookies.get("__Secure-next-auth.session-token");
   // Optimistic navigation only; the DAL validates the session and its version.

@@ -214,6 +214,31 @@ La copia y la cola solo se guardan en ese dispositivo. La caducidad diaria elimi
 
 Consulta [SECURITY.md](SECURITY.md) para cookies, CSP, protección de mutaciones, límites de acceso, secretos y seguridad Docker. La instalación en producción requiere HTTPS. Para comprobar HTTP con la web y PostgreSQL activos: `npm run test:web`.
 
+## Logs de acceso en Docker y PostgreSQL
+
+Cada intento de login que llega a la web emite una línea JSON `AUTH_LOGIN` en la salida del contenedor `afaire-web`, visible también en Dockhand, y guarda el mismo evento en `AuthAuditEvent`. Los rechazos anteriores a la comprobación de contraseña, como origen externo o CSRF, también se registran. La respuesta incluye `X-Afaire-Request-ID` para correlacionar el intento. `AccessAttempt` sigue siendo un contador temporal de límites, no un historial de errores.
+
+```sh
+docker compose logs --since=15m afaire-web | grep AUTH_
+```
+
+Los motivos distinguen `PROXY_IP_MISSING`, `PROXY_IP_INVALID`, `IP_RATE_LIMIT`, `ACCOUNT_RATE_LIMIT`, `INVALID_INPUT`, `ACCOUNT_NOT_FOUND`, `PASSWORD_MISMATCH`, `PASSWORD_CHANGED`, `CSRF_REJECTED`, `ORIGIN_REJECTED`, `CALLBACK_REJECTED`, `BACKEND_ERROR` y `LOGIN_SUCCESS`. `stage` señala dónde ocurrió y `errorCode` conserva únicamente códigos técnicos permitidos. Un motivo de contraseña describe lo que recibió el servidor, sin determinar por qué el dispositivo envió ese valor. Los errores internos no se devuelven al navegador con su mensaje original.
+
+```sh
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <<'SQL'
+SELECT "occurredAt", "requestId", outcome, reason, stage, "errorCode"
+FROM "AuthAuditEvent"
+ORDER BY "occurredAt" DESC
+LIMIT 50;
+SQL
+```
+
+No se guardan contraseñas, hashes de contraseña, cookies, tokens, cadenas de conexión ni cabeceras completas. Cuenta e IP se relacionan mediante referencias HMAC; la IP solo se referencia si viene del proxy de confianza y es válida. Cambiar `AUTH_SECRET` cambia esas referencias. Los detalles quedan en logs administrativos, no en el formulario público. El worker elimina eventos con más de 30 días durante su ciclo normal; si está detenido, la limpieza queda pendiente. La rotación Docker continúa siendo independiente (tres archivos de 10 MB por servicio).
+
+Si PostgreSQL no permite guardar el evento, Docker conserva la línea y añade `AUTH_AUDIT_WRITE_FAILED`; no se rechaza por ello un login válido. No existe recuperación automática de esas escrituras fallidas ni reconstrucción de intentos anteriores a esta versión. Los intentos que no llegan a la web requieren revisar los logs del proxy.
+
+Antes de arrancar esta versión, aplica `20261019001000_auth_audit` con `npm run db:migrate` (o el servicio de migraciones del despliegue Docker). El worker emite `WORKER_STARTED` y `WORKER_STOPPED`; las generaciones y los envíos mantienen sus registros actuales y el heartbeat en PostgreSQL. Un worker sin trabajo no emite una línea por minuto.
+
 ## Copias y recuperación
 
 Copia manual:

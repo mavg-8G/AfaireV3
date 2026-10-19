@@ -192,6 +192,7 @@ export async function runDuePlans(now = new Date(), options: { userIds?: string[
   if (!options.userIds) {
     await prisma.offlineMutation.deleteMany({ where: { appliedAt: { lt: new Date(now.getTime() - 8 * 86400_000) } } });
     await prisma.accessAttempt.deleteMany({ where: { expiresAt: { lt: now } } });
+    await prisma.authAuditEvent.deleteMany({ where: { occurredAt: { lt: new Date(now.getTime() - 30 * 86400_000) } } });
     await prisma.workerHeartbeat.upsert({ where: { id: "daily-planner" }, create: { id: "daily-planner", updatedAt: now }, update: { updatedAt: now } });
   }
   return { generated, failed };
