@@ -1,8 +1,10 @@
 "use client";
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 export function UsageTracker({ enabled }: { enabled: boolean }) {
-  const path = usePathname(); const router = useRouter();
+  const router = useRouter();
+  // Not keyed on the path: restarting on every tab change reset the throttle, so each navigation fired a
+  // report plus a full router.refresh() that competed with the navigation and made taps feel stuck.
   useEffect(() => {
     if (!enabled) return;
     let lastInteraction = Date.now(); let lastSent = 0; let busy = false; let stopped = false;
@@ -27,6 +29,6 @@ export function UsageTracker({ enabled }: { enabled: boolean }) {
       for (const name of ["pointerdown", "keydown", "pointermove"] as const) window.removeEventListener(name, touch);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [enabled, path, router]);
+  }, [enabled, router]);
   return null;
 }

@@ -9,7 +9,7 @@ import { signOut } from "next-auth/react";
 import { ThemePicker } from "./ThemeProvider";
 import { InstallButton } from "./PwaProvider";
 import { PasswordDialog } from "./PasswordDialog";
-import { BrandMark, DeviceIcon, HabitIcon, InboxIcon, KeyIcon, LogoutIcon, ReviewIcon, SettingsIcon, TodayIcon, WeekIcon } from "./Icons";
+import { BrandMark, CloseIcon, DeviceIcon, HabitIcon, InboxIcon, KeyIcon, LogoutIcon, MoreIcon, ReviewIcon, SettingsIcon, TodayIcon, WeekIcon } from "./Icons";
 
 const links = [
   { href: "/", label: "Hoy", Icon: TodayIcon },
@@ -20,9 +20,16 @@ const links = [
   { href: "/settings", label: "Ajustes", Icon: SettingsIcon },
 ];
 
+// The phone tab bar keeps four destinations; the rest live behind "Más" so every tab stays a comfortable tap target.
+const tabs = links.slice(0, 4);
+const moreLinks = [...links.slice(4), { href: "/sessions", label: "Sesiones activas", Icon: DeviceIcon }];
+
 // The CSP forbids inline styles, so the sliding indicators move through fixed translate classes, one per link.
 const rail = ["translate-y-0", "translate-y-12", "translate-y-24", "translate-y-36", "translate-y-48", "translate-y-60"];
-const slide = ["translate-x-0", "translate-x-full", "translate-x-[200%]", "translate-x-[300%]", "translate-x-[400%]", "translate-x-[500%]"];
+const slide = ["translate-x-0", "translate-x-full", "translate-x-[200%]", "translate-x-[300%]", "translate-x-[400%]"];
+
+// Plain left clicks are client navigations; modified clicks open a new tab and must not move the highlight.
+function plainClick(event: React.MouseEvent) { return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey; }
 
 function isCurrent(path: string, href: string) {
   return href === "/" ? path === "/" || path === "/check-in" : path === href || path.startsWith(href + "/");
@@ -71,8 +78,16 @@ function AccountMenu({ name }: { name: string }) {
 }
 
 export function AppNav({ name }: { name: string }) {
-  const { t } = useI18n(); const path = usePathname();
+  const { t } = useI18n(); const actualPath = usePathname();
+  // Highlight the tapped destination at once instead of waiting for the server render to arrive.
+  const [tapped, setTapped] = useState<{ from: string; href: string } | null>(null);
+  const path = tapped && tapped.from === actualPath ? tapped.href : actualPath;
+  const more = useRef<HTMLDialogElement>(null);
+  const go = (href: string) => (event: React.MouseEvent) => { more.current?.close(); if (plainClick(event) && !isCurrent(actualPath, href)) setTapped({ from: actualPath, href }); };
   const active = links.findIndex(({ href }) => isCurrent(path, href));
+  const tab = tabs.findIndex(({ href }) => isCurrent(path, href));
+  const moreActive = tab < 0 && moreLinks.some(({ href }) => isCurrent(path, href));
+  const tabSlot = tab >= 0 ? tab : moreActive ? 4 : -1;
   return <>
     {/* Phones and tablets: slim top bar */}
     <header className="topbar sticky top-0 z-30 border-b border-line/70 bg-paper/85 backdrop-blur-xl backdrop-saturate-150 lg:hidden">
@@ -89,7 +104,7 @@ export function AppNav({ name }: { name: string }) {
         <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-11 rounded-xl bg-card shadow-sm transition-transform duration-300 ease-(--ease-out) ${active < 0 ? "opacity-0" : rail[active]}`} />
         {links.map(({ href, label, Icon }) => {
           const current = isCurrent(path, href);
-          return <Link key={href} href={href} aria-current={current ? "page" : undefined}
+          return <Link key={href} href={href} onClick={go(href)} aria-current={current ? "page" : undefined}
             className={`group relative flex items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors ${current ? "text-ink" : "text-muted hover:bg-card/60 hover:text-ink"}`}>
             <Icon className={`size-5 transition-transform duration-200 group-hover:scale-110 ${current ? "text-sage" : ""}`} />{t(label)}
           </Link>;
@@ -104,20 +119,45 @@ export function AppNav({ name }: { name: string }) {
     {/* Phones and tablets: bottom tab bar */}
     <div className="tabbar pointer-events-none fixed inset-x-0 bottom-0 z-30 lg:hidden">
       <nav aria-label={t("Principal")} className="pointer-events-auto relative mx-auto h-(--tabbar-height) max-w-xl rounded-3xl border border-line bg-card/90 shadow-lg backdrop-blur-xl backdrop-saturate-150">
-        <span aria-hidden="true" className={`absolute inset-y-1.5 left-0 w-1/6 p-0.5 transition-transform duration-300 ease-(--ease-out) ${active < 0 ? "opacity-0" : slide[active]}`}><span className="block size-full rounded-2xl bg-sage-soft" /></span>
-        <ul className="relative grid h-full grid-cols-6">
-          {links.map(({ href, label, Icon }) => {
+        <span aria-hidden="true" className={`absolute inset-y-1.5 left-0 w-1/5 p-0.5 transition-transform duration-200 ease-(--ease-out) ${tabSlot < 0 ? "opacity-0" : slide[tabSlot]}`}><span className="block size-full rounded-2xl bg-sage-soft" /></span>
+        <ul className="relative grid h-full grid-cols-5">
+          {tabs.map(({ href, label, Icon }) => {
             const current = isCurrent(path, href);
             return <li key={href} className="min-w-0">
-              <Link href={href} aria-current={current ? "page" : undefined}
-                className={`flex h-full flex-col items-center justify-center gap-1 px-0.5 text-[10.5px] font-semibold leading-none transition duration-150 active:scale-95 ${current ? "text-sage" : "text-muted active:text-ink"}`}>
-                <Icon className="size-[21px]" />
+              <Link href={href} onClick={go(href)} aria-current={current ? "page" : undefined}
+                className={`tab-target flex h-full flex-col items-center justify-center gap-1 px-0.5 text-[11px] font-semibold leading-none transition-colors duration-100 active:scale-95 ${current ? "text-sage" : "text-muted active:text-ink"}`}>
+                <Icon className="size-[22px]" />
                 <span className="max-w-full truncate">{t(label)}</span>
               </Link>
             </li>;
           })}
+          <li className="min-w-0">
+            <button type="button" onClick={() => more.current?.showModal()} aria-haspopup="dialog" aria-current={moreActive ? "page" : undefined}
+              className={`tab-target flex h-full w-full flex-col items-center justify-center gap-1 px-0.5 text-[11px] font-semibold leading-none transition-colors duration-100 active:scale-95 ${moreActive ? "text-sage" : "text-muted active:text-ink"}`}>
+              <MoreIcon className="size-[22px]" />
+              <span className="max-w-full truncate">{t("Más")}</span>
+            </button>
+          </li>
         </ul>
       </nav>
     </div>
+
+    {/* "Más": a bottom sheet with the destinations that don't fit in the tab bar. Clicking the backdrop closes it. */}
+    <dialog ref={more} aria-labelledby="more-title" onClick={event => { if (event.target === event.currentTarget) more.current?.close(); }}
+      className="more-sheet mx-auto mb-0 mt-auto w-full max-w-xl rounded-t-3xl border border-b-0 border-line bg-card p-0 text-ink shadow-lg lg:hidden">
+      <div className="px-5 pt-3">
+        <span aria-hidden="true" className="mx-auto block h-1.5 w-10 rounded-full bg-line" />
+        <div className="mt-3 flex items-center justify-between gap-4"><h2 id="more-title" className="font-display text-xl font-semibold">{t("Más opciones")}</h2><button type="button" onClick={() => more.current?.close()} aria-label={t("Cerrar")} className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-sunken"><CloseIcon className="size-5" /></button></div>
+        <ul className="mt-2 space-y-1">
+          {moreLinks.map(({ href, label, Icon }) => {
+            const current = isCurrent(path, href);
+            return <li key={href}><Link href={href} onClick={go(href)} aria-current={current ? "page" : undefined}
+              className={`tab-target flex min-h-13 items-center gap-4 rounded-2xl px-3 text-base font-medium transition-colors duration-100 ${current ? "bg-sage-soft text-sage" : "active:bg-sunken"}`}>
+              <Icon className="size-[22px]" />{t(label)}
+            </Link></li>;
+          })}
+        </ul>
+      </div>
+    </dialog>
   </>;
 }

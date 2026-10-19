@@ -1,7 +1,8 @@
-import { getRequestPreferences } from "@/lib/request-preferences";
-import { translator } from "@/lib/locale";
-export default async function Loading() {
-  const preferences = await getRequestPreferences(); const t = translator(preferences.locale);
+"use client";
+import { useI18n } from "@/components/LocaleProvider";
+// A client fallback with no data access: it is prefetched with the layout and shows the moment a tab is tapped.
+export default function Loading() {
+  const { t } = useI18n();
   return <div role="status" aria-live="polite" className="space-y-6">
     <span className="sr-only">{t("Abriendo tu agenda…")}</span>
     <div className="space-y-3"><div className="h-4 w-28 animate-pulse rounded-full bg-line/70" /><div className="h-12 w-3/4 max-w-md animate-pulse rounded-2xl bg-line/70" /><div className="h-4 w-56 animate-pulse rounded-full bg-line/50" /></div>
