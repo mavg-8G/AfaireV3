@@ -16,10 +16,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const preferences = await getRequestPreferences(); const t = translator(preferences.locale);
   const user = await requireUser(); const now = new Date(); const today = ymdInZone(now, user.timezone); const params = await searchParams;
   const monday = startOfLocalWeek(today, user.weekStartsOn); const weekBounds = (first: string) => ({ start: calendarDayBounds(first, user.timezone).start, end: calendarDayBounds(addLocalDays(first, 6), user.timezone).end });
-  // Without an explicit week, review the one that just ended; a new account has nothing there yet, so show the week in progress.
-  let fallback = addLocalDays(monday, -7);
-  if (!params.start) { const last = weekBounds(fallback); if (!await prisma.event.count({ where: { userId: user.id, startsAt: { gte: last.start, lt: last.end } } })) fallback = monday; }
-  const parsed = DateSchema.safeParse(params.start ?? fallback); if (!parsed.success) notFound();
+  const parsed = DateSchema.safeParse(params.start ?? monday); if (!parsed.success) notFound();
   const start = startOfLocalWeek(parsed.data, user.weekStartsOn); const end = addLocalDays(start, 6); const dates = Array.from({ length: 7 }, (_, index) => addLocalDays(start, index));
   const bounds = weekBounds(start); const previous = weekBounds(addLocalDays(start, -7)); const current = start === monday;
   const [events, before, habits, completed, plans, checkIns] = await Promise.all([
