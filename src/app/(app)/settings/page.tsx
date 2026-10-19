@@ -32,7 +32,7 @@ async function SystemStatus({ userId, timezone }: { userId: string; timezone: st
   const configuredPush = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT);
   const pushAlive = pushHeartbeat && new Date().getTime() - pushHeartbeat.updatedAt.getTime() < 10 * 60_000;
   const alive = heartbeatHealthy(heartbeat);
-  return <section className="space-y-4 rounded-2xl border border-line bg-card p-5 shadow-sm">
+  return <section className="space-y-4 rounded-3xl border border-line bg-card p-5 shadow-md">
     <h2 className="text-2xl">{t("Automatización")}</h2>
     <div className="space-y-1">
       <p className={alive ? "text-sm text-sage" : "text-sm text-terracotta"}>{alive ? t("Planificador activo") : t("Planificador sin señal reciente")}{heartbeat && ` · ${displayDateTime(heartbeat.updatedAt, timezone, preferences)}`}</p>

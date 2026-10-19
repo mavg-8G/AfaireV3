@@ -9,7 +9,7 @@ import { startOfLocalWeek, addLocalDays, calendarDayBounds, dateOnly, weekdayFor
 import { habitStats } from "@/lib/insights";
 import { dayExtremes, minutesLabel, reviewOutcome, scheduledMinutes, summarizeWeek } from "@/lib/weekly-review";
 
-const card = "rounded-2xl border border-line bg-card p-5 shadow-sm";
+const card = "rounded-3xl border border-line bg-card p-5 shadow-md";
 const MOODS: Record<string, { label: string; tone: string }> = { OK: { label: "Bien", tone: "bg-sage-soft text-sage" }, BUSY: { label: "Demasiado lleno", tone: "bg-pending text-gold" }, DIFFICULT: { label: "Día difícil", tone: "bg-pending text-terracotta" } };
 const OPEN_LABELS: Record<string, string> = { SKIPPED: "Omitido", POSTPONED: "Pospuesto", MISSED: "Sin completar" };
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ start?: string }> }) {

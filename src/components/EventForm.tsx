@@ -7,7 +7,7 @@ import { createLockedEvent } from "@/app/actions/events";
 export function EventForm({ date }: { date: string }) {
   const { t } = useI18n();
   const [error, setError] = useState(""); const [pending, setPending] = useState(false); const router = useRouter();
-  return <form aria-busy={pending} className="grid gap-4 rounded-2xl border border-line bg-card p-5 shadow-sm" onSubmit={async event => {
+  return <form aria-busy={pending} className="grid gap-4 rounded-3xl border border-line bg-card p-5 shadow-md" onSubmit={async event => {
     event.preventDefault(); const form = event.currentTarget; setPending(true); setError("");
     try { const result = await createLockedEvent(new FormData(form)); if (result.error) setError(result.error); else { form.reset(); router.refresh(); } }
     catch { setError(t("No se pudo guardar la cita.")); } finally { setPending(false); }
