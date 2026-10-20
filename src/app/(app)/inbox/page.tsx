@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { FlexibleTasks } from "@/components/FlexibleTasks";
 import { dateOnly } from "@/lib/time";
 import { TaskForm } from "@/components/TaskForm";
+import { FormSheet } from "@/components/FormSheet";
 import { ActionButton } from "@/components/ActionButton";
 import { completeTask, deleteTask, returnTaskToInbox, acceptDurationSuggestion } from "@/app/actions/tasks";
 import { PRIORITY_LABELS, WINDOW_LABELS } from "@/lib/definitions";
@@ -34,5 +35,5 @@ export default async function InboxPage() {
       {task.categoryId && <p className="mt-2 text-xs text-sage">{categories.find(c=>c.id===task.categoryId)?.name}</p>}
       <ProcrastinationPrompt task={task} />
     </article>)}
-  </section><aside className="space-y-5"><TaskForm learningTemplates={learningTemplates} categories={categories} today={today} timezone={user.timezone} /><FlexibleTasks today={today} series={series} /></aside></div>;
+  </section><aside className="space-y-5"><FormSheet label="Nueva tarea"><TaskForm learningTemplates={learningTemplates} categories={categories} today={today} timezone={user.timezone} /></FormSheet><FlexibleTasks today={today} series={series} /></aside></div>;
 }

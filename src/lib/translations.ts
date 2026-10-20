@@ -422,6 +422,8 @@ export const english: Record<string, string> = {
   "Notas": "Notes",
   "Notificaciones": "Notifications",
   "Nueva": "New",
+  "Nueva cita": "New appointment",
+  "Nuevo hábito": "New habit",
   "Objetivo semanal": "Weekly target",
   "Omitido": "Skipped",
   "Omitir hoy": "Skip today",

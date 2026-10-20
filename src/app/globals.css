@@ -334,7 +334,8 @@ select.field {
 @keyframes toast-in { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* Page sections rise in on mount; disclosure contents ease open. Both are transform/opacity only. */
-.app-main > * { animation: rise var(--dur-slow) var(--ease-out) both; }
+/* backwards, not both: a filled transform would trap position: fixed children (the form sheet button). */
+.app-main > * { animation: rise var(--dur-slow) var(--ease-out) backwards; }
 .app-main > :nth-child(2) { animation-delay: 60ms; }
 .app-main > :nth-child(3) { animation-delay: 120ms; }
 .app-main > :nth-child(n + 4) { animation-delay: 180ms; }
@@ -389,7 +390,8 @@ dialog[open]::backdrop { animation: fade-in .2s ease-out both; }
 .more-sheet[open] { animation: sheet-in .22s var(--ease-out) both; }
 @keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
 .floating-above-tabbar { bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 1.5rem); }
-@media (min-width: 1024px) { .floating-above-tabbar { bottom: 1.5rem; } }
+@media (min-width: 1024px) { .floating-above-tabbar { bottom: 1.5rem; } .form-sheet { display: contents; } }
+@media (max-width: 1023px) { .form-sheet > div > form { border: 0; box-shadow: none; padding-top: 0; } }
 
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
