@@ -1,7 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#ff795e"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9a5c"/>
+      <stop offset="1" stop-color="#e8395f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
   <g id="mark" color="#3b211f" fill="currentColor">
-    <path d="m107 365 112-228q13-26 37-26t37 26l112 228h-79l-70-151-70 151z"/>
-    <path d="m196 345 49 43 106-117" fill="none" stroke="currentColor" stroke-width="35" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(-77 -76) scale(1.3)">
+      <path d="m107 365 112-228q13-26 37-26t37 26l112 228h-79l-70-151-70 151z"/>
+      <path d="m196 345 49 43 106-117" fill="none" stroke="#ffe27a" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
   </g>
 </svg>
