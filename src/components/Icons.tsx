@@ -29,6 +29,6 @@ export const KeyIcon = (p: IconProps) => <Svg {...p}><circle cx="8" cy="15" r="4
 // Impulso: the A and check share the silhouette used by the PWA icons.
 export function BrandMark({ className = "size-9" }: IconProps) {
   return <span aria-hidden="true" className={`brand-mark grid shrink-0 place-items-center overflow-hidden rounded-[22%] ${className}`}>
-    <svg viewBox="0 0 512 512" className="size-full" fill="currentColor"><path d="m107 365 112-228q13-26 37-26t37 26l112 228h-79l-70-151-70 151z" /><path d="m196 345 49 43 106-117" fill="none" stroke="currentColor" strokeWidth="35" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    <svg viewBox="0 0 512 512" className="size-full" fill="currentColor"><g transform="translate(-77 -76) scale(1.3)"><path d="m107 365 112-228q13-26 37-26t37 26l112 228h-79l-70-151-70 151z" /><path d="m196 345 49 43 106-117" fill="none" stroke="#ffe27a" strokeWidth="38" strokeLinecap="round" strokeLinejoin="round" /></g></svg>
   </span>;
 }

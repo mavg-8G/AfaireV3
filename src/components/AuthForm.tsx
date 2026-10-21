@@ -13,7 +13,7 @@ export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "regist
   const { t, preferences } = useI18n();
   const [state, setState] = useState<AuthFormState>({}); const [pending, setPending] = useState(false);
   const register = mode === "register";
-  return <main className="topbar auth-glow mx-auto grid min-h-dvh w-full max-w-6xl items-center gap-12 px-5 py-10 sm:px-6 lg:grid-cols-2 lg:py-12">
+  return <div className="auth-glow min-h-dvh"><main className="topbar mx-auto grid min-h-dvh w-full max-w-6xl items-center gap-12 px-5 py-10 sm:px-6 lg:grid-cols-2 lg:py-12">
     <section className="hidden lg:block"><Link href="/login" className="flex w-fit items-center gap-3 font-display text-3xl font-semibold tracking-tight"><BrandMark className="size-11" />Afaire</Link>
       <p className="eyebrow mt-16">{t("Haz espacio para lo que importa")}</p>
       <h2 className="mt-4 max-w-lg text-6xl font-semibold leading-[1.02] tracking-[-0.035em]">{t("Tu día, con un poco más de calma.")}</h2>
@@ -22,7 +22,7 @@ export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "regist
         {[["09:00", t("Tu cita, en su lugar"), true], ["10:10", t("Un momento para avanzar"), false], ["12:30", t("Tiempo para una pausa"), false]].map(([time, label, fixed]) => <li key={String(time)} className="relative grid grid-cols-[3.5rem_1fr] gap-x-6 sm:grid-cols-[4.5rem_1fr]"><span className="pt-3.5 text-right text-sm font-semibold tabular-nums">{time}</span><span aria-hidden="true" className={`absolute top-[1.05rem] left-[calc(5.25rem-6px)] size-3 rounded-full border-2 ${fixed ? "border-fixed bg-fixed" : "border-amber bg-card"}`} /><span className={`rounded-2xl border bg-card px-4 py-3 text-sm font-medium shadow-md ${fixed ? "border-fixed/40" : "border-line"}`}>{label}</span></li>)}
       </ol>
     </section>
-    <section className="mx-auto w-full max-w-md rounded-[2rem] border border-line bg-card p-6 shadow-lg sm:p-10">
+    <section className="auth-card mx-auto w-full max-w-md rounded-[2rem] border border-line p-6 sm:p-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><span className="flex items-center gap-2.5 font-display text-xl font-semibold lg:hidden"><BrandMark className="size-8" />Afaire</span><div className="flex items-center gap-2"><LanguagePicker /><div className="w-32"><ThemePicker compact /></div></div></div>
       <p className="eyebrow">{register ? t("Empieza aquí") : t("Bienvenido de nuevo")}</p>
       <h1 className="mt-2 text-4xl sm:text-[2.75rem]">{register ? t("Crea tu cuenta") : t("Tu agenda te espera")}</h1>
@@ -55,5 +55,5 @@ export function AuthForm({ mode, inviteOnly = false }: { mode: "login" | "regist
       </form>
       <p className="mt-6 text-center text-sm text-muted">{register ? t("¿Ya tienes una cuenta? ") : t("¿Primera vez aquí? ")}<Link href={register ? "/login" : "/register"} className="text-sage underline underline-offset-4">{register ? t("Inicia sesión") : t("Crea tu cuenta")}</Link></p>
     </section>
-  </main>;
+  </main></div>;
 }
