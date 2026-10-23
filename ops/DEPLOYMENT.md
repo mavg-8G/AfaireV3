@@ -89,6 +89,6 @@ En una instalación sin Git, reemplaza el script del VPS (aunque lo hayas llamad
 
 ## Configurar Web Push
 
-Genera una vez las claves con `npm run push:keys` (también puede ejecutarse en la imagen migrate). Guarda `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT=https://afaire.espectro.uk` en el `.env` del servidor; conserva el par en los siguientes despliegues. Compose las entrega a web y worker. El worker ahora usa también la red `edge` para acceder por HTTPS a los proveedores push. No se añade un puerto público al worker ni a PostgreSQL.
+Genera una vez las claves con `npm run push:keys` en local o `docker compose run --rm --no-deps migrate node dist/admin/generate-push-keys.cjs` en producción. Guarda `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT=https://afaire.espectro.uk` en el `.env` del servidor; conserva el par en los siguientes despliegues. Compose las entrega a web y worker. El worker ahora usa también la red `edge` para acceder por HTTPS a los proveedores push. No se añade un puerto público al worker ni a PostgreSQL.
 
 Aplica la migración aditiva antes de iniciar esta versión. En Ajustes, activa el dispositivo y acepta su permiso; en iOS abre la PWA instalada. Comprueba un aviso real en cada plataforma. Ajustes muestra heartbeat, generaciones fallidas y entregas con error. Revisa `docker compose logs --tail=100 worker` si no avanza la señal. Sin las claves VAPID, el resto de funciones sigue disponible.

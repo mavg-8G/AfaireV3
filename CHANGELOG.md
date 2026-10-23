@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## 2026-10-22 · Parches de dependencias y contenedores
+
+- Next.js y eslint-config-next pasan de 16.4.0 a 16.4.2, con el lockfile regenerado y sharp 0.35.5.
+- Docker actualiza Alpine y exige las revisiones corregidas de zlib y musl. Ambas imágenes finales excluyen npm/npx y Yarn; los comandos administrativos se invocan directamente con Node. CI comprueba su ausencia, actualiza la imagen base y audita dependencias de producción.
+- Validación local: auditoría npm de producción con 0 vulnerabilidades; 126 pruebas unitarias, tipos, lint y builds web/worker/administración correctos. Integración pendiente por PostgreSQL local no disponible. Sin Docker/Trivy/Grype locales para reconstruir y escanear imágenes.
+- Pendientes documentados en SECURITY.md: BusyBox CVE-2025-60876 sin parche indicado y braces de desarrollo sin versión corregida publicada. No se ha desplegado esta actualización.
+
 ## Sin publicar · Interfaz renovada
 
 - Ajustes rediseñado en pestañas (Horario y plan, Categorías, Días especiales, Avisos y General), cada una con su dirección y cargando solo sus datos. El formulario de horario se divide en secciones con un botón de guardar fijo; el estado de la automatización muestra lo esencial y deja métricas e historial en «Detalles técnicos».

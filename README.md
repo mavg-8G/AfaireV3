@@ -189,7 +189,7 @@ El servidor descarga imágenes del mismo commit, crea un respaldo, aplica migrac
 
 Los servicios son `afaire-web`, `worker`, `migrate` y `db`. Se utiliza tu Caddy existente. No hay puertos publicados para la web ni para PostgreSQL. `docker-compose.proxy.yml` conecta solo la web a la red `proxy` de tu Caddy.
 
-La imagen compartida por web y worker contiene la salida standalone de Next.js, el worker compilado y el cliente nativo de Prisma. Las dependencias del worker se incluyen en su bundle; no se copia todo `node_modules` sobre la salida standalone. La imagen de migraciones se construye por separado con la CLI de Prisma y los comandos administrativos compilados, sin el servidor Next.js ni las herramientas de desarrollo. Los comandos `npm run account:reset` y `npm run push:keys` siguen disponibles en `migrate`.
+La imagen compartida por web y worker contiene la salida standalone de Next.js, el worker compilado y el cliente nativo de Prisma. Las dependencias del worker se incluyen en su bundle; no se copia todo `node_modules` sobre la salida standalone. La imagen de migraciones se construye por separado con la CLI de Prisma y los comandos administrativos compilados, sin el servidor Next.js ni las herramientas de desarrollo. En `migrate`, los comandos administrativos se ejecutan directamente con `node dist/admin/reset-password.cjs` y `node dist/admin/generate-push-keys.cjs`; las imágenes finales no incluyen npm, npx ni Yarn.
 
 Actions verifica el contenido mínimo y prueba ambas imágenes, incluidas las migraciones, HTTP y el heartbeat del worker con el sistema de archivos de solo lectura. También imprime el tamaño final en bytes. Para medirlas en un host con Docker:
 
@@ -267,7 +267,7 @@ El script realiza una copia antes de restaurar, detiene la web y el worker, rest
 Si un usuario pierde su contraseña, el administrador puede restablecerla desde un terminal del servidor. La contraseña se solicita sin mostrarse ni almacenarse en el historial:
 
 ```sh
-docker compose run --rm migrate npm run account:reset -- usuario@ejemplo.com
+docker compose run --rm migrate node dist/admin/reset-password.cjs usuario@ejemplo.com
 ```
 
 Todas las sesiones previas de esa cuenta quedan invalidadas. La recuperación y verificación por email requieren configurar un proveedor de correo y quedan pendientes para una apertura pública del registro.
@@ -315,7 +315,7 @@ Hábitos muestra racha y cumplimiento de la semana hasta hoy. La racha ignora d�
 
 En local o en un checkout del servidor con dependencias instaladas, ejecuta `npm run push:setup -- --subject https://afaire.espectro.uk` (o usa tu URL HTTPS pública / `mailto:correo-de-contacto`). Este comando guarda la pareja y el contacto directamente en `.env`, sin mostrar secretos, conserva las claves existentes y rechaza parejas incompletas o incompatibles. Reinicia web y worker para cargarla. Para otro archivo utiliza `--env /ruta/.env`.
 
-Si administras el VPS solo con las imágenes Docker, genera claves VAPID una vez con `docker compose run --rm --no-deps migrate npm run push:keys`. Guarda `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` (URL HTTPS pública o correo de contacto con prefijo `mailto:`) en el `.env` del servidor. No cambies las claves en cada actualización; la privada nunca llega al navegador. Compose las pasa a web y worker. El worker tiene salida HTTPS por la red edge para alcanzar los proveedores de los navegadores; PostgreSQL permanece en la red interna. Tras guardarlas, recrea ambos procesos con `docker compose up -d --force-recreate --no-deps afaire-web worker`. Sin las tres variables la app funciona y muestra los avisos como pendientes de configuración.
+Si administras el VPS solo con las imágenes Docker, genera claves VAPID una vez con `docker compose run --rm --no-deps migrate node dist/admin/generate-push-keys.cjs`. Guarda `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` (URL HTTPS pública o correo de contacto con prefijo `mailto:`) en el `.env` del servidor. No cambies las claves en cada actualización; la privada nunca llega al navegador. Compose las pasa a web y worker. El worker tiene salida HTTPS por la red edge para alcanzar los proveedores de los navegadores; PostgreSQL permanece en la red interna. Tras guardarlas, recrea ambos procesos con `docker compose up -d --force-recreate --no-deps afaire-web worker`. Sin las tres variables la app funciona y muestra los avisos como pendientes de configuración.
 
 En Ajustes › Avisos, activa este dispositivo y acepta el permiso del navegador. En iOS abre Afaire instalada en la pantalla de inicio ([WebKit](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)). Puedes configurar cada aviso, antelación de 1–120 minutos y las horas locales del resumen y los vencimientos. Se admite hasta cinco dispositivos por cuenta, con desactivación individual o conjunta. Cerrar sesión desactiva esa suscripción local; invalidar sesiones retira las suscripciones de su versión anterior. Los títulos pueden aparecer en la pantalla bloqueada.
 

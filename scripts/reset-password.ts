@@ -23,7 +23,7 @@ async function readPassword() {
 }
 async function main() {
   const email = process.argv[2]?.trim().toLowerCase();
-  if (!email) throw new Error("Uso: npm run account:reset -- usuario@ejemplo.com");
+  if (!email) throw new Error("Uso: npm run account:reset -- usuario@ejemplo.com (local) o node dist/admin/reset-password.cjs usuario@ejemplo.com (contenedor)");
   const password = await readPassword();
   PasswordFormSchema.parse({ currentPassword: "reset", newPassword: password });
   const user = await prisma.user.findUniqueOrThrow({ where: { email } });

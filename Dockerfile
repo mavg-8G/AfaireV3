@@ -1,7 +1,9 @@
 FROM node:26-alpine AS base
 WORKDIR /app
 # Prisma Migrate uses OpenSSL; the application uses Prisma 7 with the pg adapter.
-RUN apk add --no-cache openssl ca-certificates
+RUN apk upgrade --no-cache \
+    && apk add --no-cache openssl ca-certificates \
+        'zlib>=1.3.2-r1' 'musl>=1.2.6-r3' 'musl-utils>=1.2.6-r3'
 ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
@@ -20,7 +22,13 @@ RUN node scripts/container-package.mjs \
     && node -e "for (const dir of ['node_modules/@prisma/client', 'node_modules/.cache']) require('node:fs').rmSync(dir, { recursive: true, force: true })" \
     && npm cache clean --force
 
-FROM base AS runtime-files
+# Production commands run with node directly. Do not ship npm/npx (including
+# their separate vulnerable dependency tree) or Yarn in either final image.
+FROM base AS production-base
+RUN rm -rf /usr/local/lib/node_modules/npm /opt/yarn* \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg
+
+FROM production-base AS runtime-files
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
@@ -29,7 +37,7 @@ COPY --from=builder /app/dist/prisma-client.cjs ./dist/prisma-client.cjs
 COPY scripts/verify-container-runtime.mjs /tmp/verify-container-runtime.mjs
 RUN node /tmp/verify-container-runtime.mjs /app
 
-FROM base AS migrate
+FROM production-base AS migrate
 ENV NODE_ENV=production
 COPY --from=migrate-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=migrate-deps --chown=node:node /app/package.json ./package.json
@@ -41,7 +49,7 @@ COPY --from=builder --chown=node:node /app/dist/prisma-client.cjs ./dist/prisma-
 USER node
 CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
 
-FROM base AS runtime
+FROM production-base AS runtime
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=runtime-files --chown=node:node /app ./
 USER node

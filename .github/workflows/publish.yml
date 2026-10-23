@@ -32,6 +32,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm audit --omit=dev --audit-level=low
       - run: npm run db:generate && npm run db:migrate
       - run: npm run typecheck && npm run lint && npm test && npm run test:integration
       - run: npm run build && npm run worker:build && npm run admin:build
@@ -54,10 +55,13 @@ jobs:
           npm run test:web
       - name: Build and smoke-test reduced Docker images
         run: |
-          docker build --target runtime -t afaire-runtime:test .
-          docker build --target migrate -t afaire-migrate:test .
+          docker build --pull --target runtime -t afaire-runtime:test .
+          docker build --pull --target migrate -t afaire-migrate:test .
+          for image in afaire-runtime:test afaire-migrate:test; do
+            docker run --rm "$image" node -e 'const fs=require("node:fs");for(const p of ["/usr/local/lib/node_modules/npm","/usr/local/bin/npm","/usr/local/bin/npx","/opt/yarn","/usr/local/bin/yarn","/usr/local/bin/yarnpkg"])if(fs.existsSync(p))throw new Error("Unexpected package manager: "+p)'
+          done
           docker run --rm --network host -e DATABASE_URL afaire-migrate:test
-          docker run --rm afaire-migrate:test npm run push:keys > /tmp/afaire-vapid-test.txt
+          docker run --rm afaire-migrate:test node dist/admin/generate-push-keys.cjs > /tmp/afaire-vapid-test.txt
           docker run --rm --network host -e DATABASE_URL afaire-runtime:test node -e 'const p=require("./dist/prisma-client.cjs").createPrismaClient(); p.user.count().then(()=>p.workerHeartbeat.deleteMany()).then(()=>console.log("Prisma query OK")).finally(()=>p.$disconnect())'
           trap 'docker logs afaire-runtime-test; docker logs afaire-worker-test; docker rm -f afaire-runtime-test afaire-worker-test' EXIT
           docker run -d --name afaire-runtime-test --network host --read-only --tmpfs /tmp --tmpfs /app/.next/cache:uid=1000,gid=1000,mode=0700 -e DATABASE_URL -e AUTH_SECRET -e NEXTAUTH_URL=http://localhost:3001 -e REGISTRATION_MODE -e TRUST_PROXY -e PORT=3001 afaire-runtime:test
@@ -89,6 +93,7 @@ jobs:
         with:
           context: .
           target: runtime
+          pull: true
           push: true
           tags: ghcr.io/mavg-8g/afairev3:${{ github.sha }}
           labels: |
@@ -103,6 +108,7 @@ jobs:
         with:
           context: .
           target: migrate
+          pull: true
           push: true
           tags: ghcr.io/mavg-8g/afairev3-migrate:${{ github.sha }}
           labels: |
