@@ -1,6 +1,6 @@
 # Hoja de ruta de Afaire
 
-Actualizada el 18 de octubre de 2026. Este documento recoge prioridades de producto, sin fechas de entrega comprometidas. El [README](README.md) describe las funciones disponibles y [PLAN.md](PLAN.md) conserva el plan inicial.
+Actualizada el 31 de octubre de 2026. Este documento recoge prioridades de producto, sin fechas de entrega comprometidas. El [README](README.md) describe las funciones disponibles y [PLAN.md](PLAN.md) conserva el plan inicial.
 
 ## Estado actual
 

@@ -102,7 +102,7 @@ Se guardan únicamente fecha local, franja, zona y momento de observación, dura
 
 ## Stack
 
-Next.js 16.4 App Router, React 19, TypeScript 7, Tailwind 4, PostgreSQL y Prisma 7.10.0 con `@prisma/adapter-pg`. Auth.js/NextAuth 4.24.15 gestiona las sesiones JWT en cookies. El cliente Prisma se genera en `src/generated/prisma`; `prisma.config.ts` configura el esquema, las migraciones y la conexión del CLI. Las imágenes usan Node 26 Alpine.
+Next.js 16.4 App Router, React 19, TypeScript 7, Tailwind 4, PostgreSQL y Prisma 7.10.1 con `@prisma/adapter-pg`. Auth.js/NextAuth 4.24.15 gestiona las sesiones JWT en cookies. El cliente Prisma se genera en `src/generated/prisma`; `prisma.config.ts` configura el esquema, las migraciones y la conexión del CLI. Las imágenes usan Node 26 Alpine.
 
 TypeScript 7 se instala como `@typescript/native` y proporciona `tsc`; la API de TypeScript 6 se mantiene bajo el alias `typescript` para los plugins de ESLint y Next.js, según la configuración de coexistencia recomendada por Microsoft. ESLint 10 usa `@eslint/compat` para los plugins de Next.js que todavía emplean la API anterior. Se requiere Node.js 22.13 o posterior.
 

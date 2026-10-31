@@ -18,7 +18,7 @@ El informe de Dockhand corresponde a una imagen anterior (`5704b649896509e773b62
 
 | Componente del informe | Tratamiento |
 | --- | --- |
-| Next.js | `next` y `eslint-config-next` fijados a 16.4.2; `sharp` resuelto a 0.35.5. |
+| Next.js | `next` y `eslint-config-next` fijados a 16.4.3 (antes 16.4.2); `sharp` resuelto a 0.35.5. |
 | brace-expansion | El lockfile ya resuelve 5.0.12 y 1.1.21, versiones corregidas de ambas ramas utilizadas. |
 | undici, ip-address, postcss-selector-parser, http-cache-semantics | No están en el árbol de dependencias del proyecto. Se elimina npm/npx y Yarn de ambas imágenes finales para retirar sus árboles independientes; no basta con overrides del proyecto para actualizar dependencias globales. Confirmar su ausencia con un escaneo de ambas imágenes nuevas. |
 | zlib, musl y musl-utils | La construcción actualiza los paquetes Alpine y exige al menos 1.3.2-r1 para zlib y 1.2.6-r3 para musl/musl-utils. Si el repositorio Alpine no ofrece esas revisiones, el build falla. CI actualiza también la imagen base con `--pull`. |

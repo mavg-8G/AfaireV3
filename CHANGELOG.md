@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## 2026-10-31 · Actualización de dependencias
+
+- Next.js y eslint-config-next 16.4.3, React y React DOM 19.3.1, Prisma, `@prisma/client` y `@prisma/adapter-pg` 7.10.1, zod 4.6.7, dotenv 18.0.9, ESLint 10.14.0, embedded-postgres 18.6.0-beta.19 y tipos de Node 26.6.6. Se mantiene Prisma 7: la versión 8 sigue en candidata a lanzamiento.
+- Validación local: 126 pruebas unitarias, tipos, lint y build correctos. Integración y escaneo de imágenes no ejecutados en esta revisión.
+
 ## 2026-10-22 · Parches de dependencias y contenedores
 
 - Next.js y eslint-config-next pasan de 16.4.0 a 16.4.2, con el lockfile regenerado y sharp 0.35.5.
